@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>版本自检 - 只读，不修改 jihua2.html</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; background:#121212; color:#e0e0e0; padding:24px; }
+  h1 { font-size:18px; margin-bottom:4px; }
+  .sub { color:#888; font-size:13px; margin-bottom:18px; line-height:1.7; }
+  .card { background:#1e1e1e; border:1px solid #2a2a2a; border-radius:10px; padding:16px; margin-bottom:12px; max-width:900px; }
+  .row { display:flex; justify-content:space-between; gap:16px; padding:7px 0; font-size:14px; border-bottom:1px solid #262626; }
+  .row:last-child { border-bottom:none; }
+  .k { color:#bbb; }
+  .v { font-family:Consolas, monospace; text-align:right; }
+  .ok { color:#4caf50; font-weight:600; }
+  .bad { color:#e53935; font-weight:600; }
+  .warn { color:#ff9800; font-weight:600; }
+  .verdict { font-size:17px; font-weight:700; padding:14px 16px; border-radius:10px; margin-bottom:16px; line-height:1.5; }
+  .verdict.ok { background:#1e2e1e; border:1px solid #4caf50; color:#a5d6a7; }
+  .verdict.bad { background:#2e1e1e; border:1px solid #e53935; color:#ef9a9a; }
+  .verdict.warn { background:#2e2a1e; border:1px solid #ff9800; color:#ffcc80; }
+  code { background:#262626; padding:2px 6px; border-radius:4px; }
+</style>
+</head>
+<body>
+<h1>版本自检卡（只读）</h1>
+<div class="sub">
+  本页检查 <code>jihua2.html</code> 的版本标记与 7 处已修复代码，不会执行它、不会修改任何文件。<br>
+  最终判定请以「应用页面设置页里的版本标记」为准 —— 那不受浏览器读本地文件的限制。
+</div>
+<div id="verdict" class="verdict warn">正在检查 …</div>
+<div class="card" id="detail"></div>
+<div class="card">
+  <div class="row"><span class="k">本页位置</span><span class="v" id="here"></span></div>
+  <div class="row"><span class="k">目标文件</span><span class="v" id="target"></span></div>
+</div>
+
+<script>
+const TARGET = '../jihua2.html';
+const MARKER = 'BUILD-2026-10-13-A';
+
+const CHECKS = [
+  { name: '版本标记 ' + MARKER, code: MARKER },
+  { name: '每周任务开始日边界（本轮修复）', code: 'const notStartedYet = task.startDate > today;' },
+  { name: 'B 段范围夹取到开始日（本轮修复）', code: 'const vLimit = notStartedYet ? task.startDate : backFloor;' },
+  { name: 'A 段到下限后跳过重扫', code: '!(cur.backward && cur.backward < backLimit)' },
+  { name: '任务结束日期约束', code: 'const forwardScanEnd = task.endDate ? minDate(forwardViewEnd, task.endDate) : forwardViewEnd;' },
+  { name: 'realToday 可重新获取', code: 'let realToday = getRealToday();' },
+  { name: '每周步骤按 weeklyPattern 分配', code: 'function stepIndexesForDate(task, date) {' },
+  { name: '越界待做安排清理（保护已有记录）', code: 'function isStaleAfterEndDate(task, date, entry, today) {' }
+];
+
+document.getElementById('here').textContent = location.href;
+document.getElementById('target').textContent = new URL(TARGET, location.href).href;
+
+function verdictOf(text, source) {
+  const rows = CHECKS.map(c => ({ name: c.name, ok: text.indexOf(c.code) >= 0 }));
+  const pass = rows.filter(r => r.ok).length;
+  render(pass === rows.length ? 'ok' : 'bad',
+    pass === rows.length
+      ? '这份 jihua2.html 是【最新版本 ' + MARKER + '】'
+      : '这份 jihua2.html 是【旧版本】（缺少 ' + (rows.length - pass) + ' 处）',
+    rows, pass, source);
+}
+
+function render(state, title, rows, pass, source) {
+  const v = document.getElementById('verdict');
+  v.className = 'verdict ' + state;
+  v.textContent = title + (rows && rows.length ? '　（通过 ' + pass + ' / ' + rows.length + ' 项）' : '');
+  document.getElementById('detail').innerHTML = (rows || []).map(r =>
+    '<div class="row"><span class="k">' + r.name + '</span><span class="v ' + (r.ok ? 'ok' : 'bad') + '">' +
+    (r.ok ? '已包含' : '缺失') + '</span></div>'
+  ).join('')
+    + (source ? '<div class="row"><span class="k">判定依据</span><span class="v">' + source + '</span></div>' : '')
+    + (state === 'bad'
+      ? '<div class="row"><span class="k">处理办法</span><span class="v warn">回到 jihua2.html 标签页按 Ctrl+Shift+R 强制刷新</span></div>'
+      : '');
+}
+
+function manualGuide() {
+  render('warn', '浏览器禁止本页读取本地文件，无法自动判定（这不代表文件是旧的）', [
+    { name: '手动核对（推荐，3 秒）', ok: false },
+    { name: '① 打开 jihua2.html，点底部「设置」', ok: true },
+    { name: '② 看「关于」卡片是否写着 ' + MARKER, ok: true },
+    { name: '③ 没看到 → 按 Ctrl+Shift+R 强制刷新', ok: true }
+  ], 0);
+}
+
+// 路径一：直接读文件文本（http:// 下可用）
+const xhr = new XMLHttpRequest();
+try {
+  xhr.open('GET', TARGET + '?t=' + Date.now(), true);
+  xhr.onload = function () {
+    const text = xhr.responseText || '';
+    if (text && text.indexOf('ensureTaskCoverage') >= 0) verdictOf(text, '读取 jihua2.html 文件文本');
+    else iframePath();
+  };
+  xhr.onerror = iframePath;
+  xhr.send();
+} catch (e) { iframePath(); }
+
+// 路径二：file:// 下读不了文件，改用 iframe 读取应用渲染出的源码；
+// 若仍被拦截，给出明确的手动核对指引。
+function iframePath() {
+  const f = document.createElement('iframe');
+  f.style.cssText = 'width:400px;height:180px;border:1px solid #333;border-radius:8px;background:#000;margin-top:8px;';
+  f.src = TARGET;
+  f.onload = function () {
+    let txt = '';
+    try { txt = f.contentDocument.documentElement.outerHTML || ''; } catch (e) { txt = ''; }
+    if (txt) verdictOf(txt, '读取 iframe 中应用页面渲染出的源码');
+    else manualGuide();
+  };
+  f.onerror = manualGuide;
+  document.getElementById('detail').appendChild(f);
+  setTimeout(function () { if (document.getElementById('verdict').className.indexOf('warn') >= 0) manualGuide(); }, 2500);
+}
+</script>
+</body>
+</html>

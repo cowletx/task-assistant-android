@@ -1,0 +1,30 @@
+# Gradle / 构建产物
+android/.gradle/
+android/build/
+android/app/build/
+android/core-schedule/build/
+android/build-logs/
+.gradle/
+build/
+
+# 本地环境（含 SDK 路径，不应提交）
+android/local.properties
+local.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# 测试与静态检查的中间产物
+_test/profile*/
+_verify/*.json
+dist/*.zip
+
+# 签到/构建日志
+*.log

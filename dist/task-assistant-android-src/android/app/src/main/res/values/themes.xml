@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 基础主题使用 Material3 的深色父主题；实际界面全部由 Compose 绘制 -->
+    <style name="Theme.TaskAssistant" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/surface_dark</item>
+        <item name="android:navigationBarColor">@color/surface_dark</item>
+        <item name="android:windowBackground">@color/black_bg</item>
+    </style>
+</resources>

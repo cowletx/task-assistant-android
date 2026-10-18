@@ -1,0 +1,118 @@
+name: Android CI
+
+# 触发条件：推到主分支、对 PR、以及手动触发
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-ci.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-ci.yml'
+  workflow_dispatch:
+
+# 注意：工作流假定仓库根目录下有 android/ 子目录（本项目的实际结构）。
+# 如果以后把 android/ 提升为仓库根目录，把下面所有 working-directory 与路径改成 '.' 即可。
+
+jobs:
+  build:
+    name: Test core-schedule + assemble Debug APK
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@v4
+
+      # JDK 17：AGP 8.7.x 要求 JDK 17+；本项目 Kotlin jvmTarget 也是 17
+      - name: 配置 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Android SDK：compileSdk 35 / build-tools 35.0.0
+      - name: 配置 Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0 platform-tools'
+          log-accepted-android-sdk-licenses: true
+
+      # 显式写出 local.properties 指向 SDK，避免 AGP 因找不到 SDK 而失败
+      # （CI 上没有开发者机器的 ~/.android/local.properties）
+      - name: 生成 local.properties
+        run: |
+          echo "sdk.dir=${ANDROID_SDK_ROOT:-$ANDROID_HOME}" > local.properties
+          cat local.properties
+
+      # Gradle 缓存（含 wrapper 发行包），显著加快后续构建
+      - name: 配置 Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          # 只缓存依赖，wrapper 校验交给下面的显式步骤，避免因缺少 wrapper jar 而失败
+          cache-read-only: false
+
+      # gradle-wrapper.jar 是二进制文件，可能未随源码提供。
+      # 这里检查并按需用 setup-gradle 提供的 gradle 生成真实 Wrapper。
+      - name: 确保 Gradle Wrapper 存在
+        run: |
+          if [ -f gradle/wrapper/gradle-wrapper.jar ] && [ -f gradlew ]; then
+            echo "Wrapper 已存在："
+            ls -l gradlew gradle/wrapper/gradle-wrapper.jar
+          else
+            echo "缺少 Wrapper，使用已安装的 gradle 生成（版本取自 gradle-wrapper.properties）"
+            VERSION=$(grep -oP 'gradle-\K[0-9.]+(?=-bin\.zip)' gradle/wrapper/gradle-wrapper.properties || echo 8.9)
+            gradle wrapper --gradle-version "$VERSION" --distribution-type bin
+            ls -l gradlew gradle/wrapper/gradle-wrapper.jar
+          fi
+          chmod +x gradlew
+
+      # 1) 先跑纯 JVM 单元测试（core-schedule，不需要模拟器）
+      - name: 运行单元测试 :core-schedule:test
+        run: ./gradlew :core-schedule:test --stacktrace
+
+      # 2) 编译 Debug APK
+      - name: 编译 Debug APK :app:assembleDebug
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      # 3) 上传测试报告（无论成功失败都上传，便于排查）
+      - name: 上传单元测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-schedule-test-report
+          path: |
+            android/core-schedule/build/reports/tests/test/**
+            android/core-schedule/build/test-results/test/**
+          if-no-files-found: warn
+
+      # 4) 上传真实生成的 Debug APK
+      #    AGP 的 debug 输出路径为 app/build/outputs/apk/debug/app-debug.apk
+      - name: 上传 Debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      # 5) 保留构建日志（Gradle 的详细输出，便于事后排查）
+      - name: 收集构建日志
+        if: always()
+        run: |
+          mkdir -p build-logs
+          ./gradlew --version > build-logs/gradle-version.txt 2>&1 || true
+          java -version > build-logs/java-version.txt 2>&1 || true
+
+      - name: 上传构建日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: android/build-logs/**
+          if-no-files-found: warn

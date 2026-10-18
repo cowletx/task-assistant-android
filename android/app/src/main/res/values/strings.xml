@@ -1,0 +1,194 @@
+<resources>
+    <string name="app_name">任务助手</string>
+
+    <!-- 底部导航 -->
+    <string name="tab_home">首页</string>
+    <string name="tab_plans">计划</string>
+    <string name="tab_history">历史</string>
+    <string name="tab_settings">设置</string>
+
+    <!-- 首页 -->
+    <string name="home_title">今日安排</string>
+    <string name="home_prev_day">前一天</string>
+    <string name="home_next_day">后一天</string>
+    <string name="home_today">今天</string>
+    <string name="home_empty">今天没有安排</string>
+    <string name="home_empty_hint">点下方按钮添加任务</string>
+    <string name="add_task">＋ 添加任务</string>
+    <string name="backlog_entry_title">有 %1$d 个堆积任务</string>
+    <string name="backlog_entry_hint">点击处理遗留任务</string>
+    <string name="backlog_go">去处理</string>
+
+    <!-- 任务状态 -->
+    <string name="status_pending">待做</string>
+    <string name="status_completed">完成</string>
+    <string name="status_skipped">跳过</string>
+    <string name="status_in_progress">进行中</string>
+    <string name="status_incomplete">未完成</string>
+    <string name="early_finish">提前结束</string>
+
+    <!-- 计划页 -->
+    <string name="plans_title">任务</string>
+    <string name="plans_empty">还没有任务</string>
+    <string name="plans_empty_hint">点下方按钮新建</string>
+    <string name="new_plan">＋ 新建任务</string>
+    <string name="week_title">本周安排</string>
+    <string name="week_empty">无安排</string>
+
+    <!-- 任务编辑 -->
+    <string name="plan_edit_new">新建任务</string>
+    <string name="plan_edit_edit">编辑任务</string>
+    <string name="field_name">任务名称</string>
+    <string name="field_name_hint">如：健身、英语、读书</string>
+    <string name="field_order">顺序</string>
+    <string name="order_rotate">轮换式（A1-B1-C1-A2...）</string>
+    <string name="order_traditional">传统式（A1-A2-A3-B1...）</string>
+    <string name="steps_pool">步骤池</string>
+    <string name="add_step">＋ 添加步骤</string>
+    <string name="field_step_name">名称</string>
+    <string name="field_sets">组数</string>
+    <string name="field_reps">目标次数</string>
+    <string name="delete">删除</string>
+    <string name="rest_enabled">组间计时</string>
+    <string name="rest_seconds">休息秒数</string>
+    <string name="rest_hint">完成一组后自动开始倒计时，但不会阻止你继续操作。</string>
+    <string name="repeat_mode">重复</string>
+    <string name="repeat_once">仅一次</string>
+    <string name="repeat_daily">每天</string>
+    <string name="repeat_weekly">每周（按星期分配）</string>
+    <string name="field_start_date">开始</string>
+    <string name="field_end_date">结束</string>
+    <string name="field_date">日期</string>
+    <string name="repeat_hint_once">只在选定这一天安排一次。</string>
+    <string name="repeat_hint_daily">结束日期留空表示永久每天重复。</string>
+    <string name="repeat_hint_weekly">点下一步后进入「每周步骤分配」，为周一到周日分别勾选要做哪几个步骤。</string>
+    <string name="save">保存</string>
+    <string name="next_step">下一步</string>
+    <string name="cancel">取消</string>
+    <string name="err_name_required">请填写任务名称</string>
+    <string name="err_step_required">请至少添加一个步骤</string>
+    <string name="err_step_name">步骤名称不能为空</string>
+    <string name="err_sets">组数至少为 1</string>
+    <string name="err_reps">目标次数至少为 1</string>
+    <string name="err_rest">休息秒数至少为 5</string>
+    <string name="err_date_required">请选择日期</string>
+    <string name="err_end_before_start">结束日期不能早于开始日期</string>
+
+    <!-- 每周分配 -->
+    <string name="week_assign_title">每周步骤分配</string>
+    <string name="week_assign_hint">为每个星期几勾选要做哪几个步骤。上方切换星期，设置完直接保存。</string>
+    <string name="select_all">全选</string>
+    <string name="select_none">全不选</string>
+    <string name="save_and_plan">保存并安排</string>
+    <string name="err_pattern_empty">至少给一天勾选步骤</string>
+    <string name="weekday_1">周一</string>
+    <string name="weekday_2">周二</string>
+    <string name="weekday_3">周三</string>
+    <string name="weekday_4">周四</string>
+    <string name="weekday_5">周五</string>
+    <string name="weekday_6">周六</string>
+    <string name="weekday_7">周日</string>
+
+    <!-- 任务详情 -->
+    <string name="plan_detail_missing">任务不存在</string>
+    <string name="detail_order_mode">顺序模式</string>
+    <string name="detail_step_count">步骤数</string>
+    <string name="detail_total_sets">总组数</string>
+    <string name="detail_rest">组间计时</string>
+    <string name="detail_rest_value">开启（%1$d 秒）</string>
+    <string name="detail_rest_off">关闭</string>
+    <string name="detail_step_count_value">%1$d 个</string>
+    <string name="detail_total_sets_value">%1$d 组</string>
+    <string name="edit_plan">编辑任务</string>
+    <string name="delete_plan">删除</string>
+    <string name="delete_plan_confirm">删除这个任务？已安排到日历上的该任务也会被移除。</string>
+    <string name="steps_list">步骤列表</string>
+    <string name="step_detail_line">%1$d 组 × %2$d</string>
+
+    <!-- 添加任务到日期 -->
+    <string name="add_task_title">添加任务</string>
+    <string name="add_task_no_plans">还没有任务\n请先到「计划」里新建任务</string>
+    <string name="add_task_select_steps">选择今天要做的步骤</string>
+    <string name="add_task_select_hint">从步骤池中勾选今天做哪几个</string>
+    <string name="add_task_only_this_day">只会安排到这一天。如果要周期性安排，请到任务的编辑页重新保存并选择重复方式。</string>
+    <string name="add">添加</string>
+    <string name="err_pick_step">请至少勾选一个步骤</string>
+    <string name="already_added">这一天已经有该任务</string>
+    <string name="added">已添加</string>
+
+    <!-- 训练 -->
+    <string name="workout_title">训练中</string>
+    <string name="workout_done_title">完成 🎉</string>
+    <string name="workout_done_sub">已做完所有组</string>
+    <string name="finish_and_save">结束并保存</string>
+    <string name="no_workout">没有进行中的训练</string>
+    <string name="progress_line">进度 %1$d/%2$d · 下一项：%3$s</string>
+    <string name="last_set">（最后一组）</string>
+    <string name="next_item">%1$s 第%2$d组</string>
+    <string name="set_info">第 %1$d/%2$d 组</string>
+    <string name="reps_target">目标 %1$d 次</string>
+    <string name="start_set">开始本组</string>
+    <string name="complete_set">完成本组</string>
+    <string name="set_started_hint">本组已开始，点击「完成本组」记录</string>
+    <string name="skip_set">跳过本组</string>
+    <string name="undo">撤销</string>
+    <string name="finish_workout">结束训练</string>
+    <string name="rest_label">组间休息</string>
+    <string name="rest_done">休息结束，开始下一组</string>
+    <string name="rest_skip">跳过</string>
+    <string name="done_sets">已完成</string>
+    <string name="none_yet">暂无</string>
+    <string name="set_row">%1$s 第%2$d组</string>
+    <string name="set_row_skipped">跳过</string>
+    <string name="no_steps_today">这一天没有勾选任何步骤</string>
+    <string name="saved">已保存</string>
+    <string name="saved_early">已保存（提前结束）</string>
+
+    <!-- 历史 -->
+    <string name="history_title">历史记录</string>
+    <string name="history_empty">暂无历史</string>
+    <string name="not_recorded">未记录</string>
+    <string name="sets_of">%1$d/%2$d组</string>
+
+    <!-- 逾期处理 -->
+    <string name="backlog_title">堆积任务处理</string>
+    <string name="backlog_empty">没有堆积任务</string>
+    <string name="backlog_days">%1$d 天未处理</string>
+    <string name="backlog_pick_steps">选择要保留的步骤（不勾的会被去掉）：</string>
+    <string name="backlog_do">做</string>
+    <string name="backlog_skip">跳过</string>
+    <string name="backlog_postpone">顺延</string>
+    <string name="backlog_override">覆盖</string>
+    <string name="backlog_merge">一起做</string>
+    <string name="backlog_back">返回</string>
+    <string name="backlog_status_pending">未开始</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_notification">通知权限</string>
+    <string name="settings_notification_granted">已授权</string>
+    <string name="settings_notification_denied">未授权</string>
+    <string name="settings_grant">去授权</string>
+    <string name="settings_persistent_notification">常驻通知</string>
+    <string name="settings_vibrate">震动提醒</string>
+    <string name="settings_export">数据导出</string>
+    <string name="settings_export_action">导出 JSON</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">任务助手 · Android 原生版 v1.0</string>
+    <string name="settings_storage">本地数据库（Room）</string>
+    <string name="settings_exported">已导出到：%1$s</string>
+    <string name="settings_export_failed">导出失败：%1$s</string>
+
+    <!-- 通用 -->
+    <string name="back">← 返回</string>
+    <string name="back_home">← 返回首页</string>
+    <string name="confirm">确定</string>
+
+    <!-- 训练前台服务通知 -->
+    <string name="workout_channel_name">训练计时</string>
+    <string name="workout_channel_desc">训练期间的组间休息倒计时</string>
+    <string name="workout_notification_title">训练进行中</string>
+    <string name="workout_notification_rest">组间休息：%1$d 秒</string>
+    <string name="workout_notification_progress">训练中 · 进度 %1$d/%2$d 组</string>
+    <string name="workout_notification_stop">结束训练</string>
+</resources>

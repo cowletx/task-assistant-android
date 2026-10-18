@@ -1,0 +1,9 @@
+<resources>
+    <!-- 与网页原型一致的深色配色（原型背景 #121212 / 卡片 #1e1e1e / 主色 #4caf50） -->
+    <color name="black_bg">#FF121212</color>
+    <color name="surface_dark">#FF1E1E1E</color>
+    <color name="green_primary">#FF4CAF50</color>
+    <color name="green_dark">#FF1E2E1E</color>
+    <color name="red_error">#FFE53935</color>
+    <color name="orange_warning">#FFFF9800</color>
+</resources>

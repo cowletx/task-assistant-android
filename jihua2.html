@@ -1,0 +1,2549 @@
+<!DOCTYPE html>
+<!-- 任务助手原型 · 版本标记（自检用，勿删）：BUILD-2026-10-13-A 每周任务开始日边界修复 -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>任务助手 - 原型</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #1a1a1a;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; color: #e0e0e0;
+  }
+  .phone {
+    width: 400px; height: 800px;
+    background: #121212;
+    border-radius: 24px; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    position: relative;
+  }
+  .status-bar {
+    height: 32px; background: #1e1e1e;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; font-size: 12px; color: #aaa; flex-shrink: 0;
+  }
+  .content {
+    flex: 1; overflow-y: auto;
+    padding: 16px; padding-bottom: 80px;
+    scroll-behavior: smooth;
+  }
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 64px;
+    background: #1e1e1e; display: flex;
+    border-top: 1px solid #333; flex-shrink: 0;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #888; font-size: 12px; cursor: pointer;
+    gap: 4px; user-select: none; transition: color 0.2s;
+  }
+  .nav-item.active { color: #4caf50; }
+  .nav-item .icon { font-size: 20px; }
+  .nav-item:hover { color: #aaa; }
+
+  .page { display: none; animation: fadeIn 0.15s; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  h2 { font-size: 20px; margin-bottom: 16px; color: #fff; }
+  h3 { font-size: 15px; margin: 16px 0 8px; color: #ccc; }
+
+  .card {
+    background: #1e1e1e; border-radius: 12px;
+    padding: 16px; margin-bottom: 12px;
+    border: 1px solid #2a2a2a; transition: border-color 0.2s;
+  }
+  .card.clickable { cursor: pointer; }
+  .card.clickable:hover { border-color: #4caf50; }
+  .card-title {
+    font-size: 16px; font-weight: 600; color: #fff;
+    margin-bottom: 6px; display: flex;
+    align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .card-title .link { color: #4caf50; cursor: pointer; }
+  .card-sub { font-size: 13px; color: #999; margin-bottom: 4px; }
+  .card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+
+  button {
+    padding: 10px 18px; border-radius: 8px;
+    border: none; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: opacity 0.15s, background 0.15s;
+    user-select: none; font-family: inherit;
+  }
+  button:active { opacity: 0.7; }
+  .btn-primary { background: #4caf50; color: #fff; }
+  .btn-primary:hover { background: #43a047; }
+  .btn-secondary { background: #333; color: #e0e0e0; }
+  .btn-secondary:hover { background: #3d3d3d; }
+  .btn-danger { background: #e53935; color: #fff; }
+  .btn-danger:hover { background: #d32f2f; }
+  .btn-warning { background: #ff9800; color: #fff; }
+  .btn-warning:hover { background: #f57c00; }
+  .btn-small { padding: 6px 12px; font-size: 13px; }
+  .btn-block { width: 100%; }
+
+  .set-list { margin-top: 8px; }
+  .set-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0; font-size: 14px; color: #bbb; align-items: center;
+  }
+  .set-row .done { color: #4caf50; }
+  .set-row .fail { color: #e53935; }
+  .set-row .over { color: #4caf50; }
+  .set-row .gray { color: #888; }
+
+  .progress-bar {
+    height: 6px; background: #333; border-radius: 3px;
+    margin: 12px 0; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: #4caf50;
+    border-radius: 3px; transition: width 0.3s;
+  }
+
+  .big-current { text-align: center; padding: 20px 0; }
+  .big-current .action-name {
+    font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px;
+  }
+  .big-current .set-info { font-size: 16px; color: #aaa; margin-bottom: 4px; }
+  .big-current .reps-target { font-size: 18px; color: #4caf50; margin-bottom: 12px; }
+  .big-current .actual-reps {
+    font-size: 52px; font-weight: 700; color: #fff;
+    margin: 8px 0; transition: color 0.2s;
+  }
+  .big-current .actual-reps.low { color: #e53935; }
+  .big-current .actual-reps.ok { color: #4caf50; }
+  .big-current .actual-reps.exact { color: #fff; }
+  .rep-controls {
+    display: flex; justify-content: center; gap: 16px;
+    margin: 12px 0; align-items: center;
+  }
+  .rep-controls button {
+    width: 56px; height: 56px; border-radius: 50%;
+    font-size: 24px; display: flex;
+    align-items: center; justify-content: center; padding: 0;
+  }
+
+  .action-buttons {
+    display: flex; gap: 8px; margin-top: 16px;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .action-buttons button { flex: 1; min-width: 100px; }
+
+  .rest-timer {
+    background: #1e2e1e; border: 1px solid #4caf50;
+    border-radius: 12px; padding: 12px 16px;
+    margin: 12px 0; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+  }
+  .rest-timer .label { font-size: 13px; color: #a5d6a7; }
+  .rest-timer .time {
+    font-size: 28px; font-weight: 700; color: #4caf50;
+    font-variant-numeric: tabular-nums;
+  }
+  .rest-timer.done .time { color: #fff; }
+  .rest-timer.done .label { color: #fff; }
+
+  .empty {
+    text-align: center; color: #666;
+    padding: 40px 0; font-size: 14px; line-height: 1.6;
+  }
+
+  .setting-row {
+    display: flex; justify-content: space-between;
+    align-items: center; padding: 14px 0;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 15px; color: #e0e0e0; }
+  .setting-value { font-size: 14px; color: #888; }
+
+  .input-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .input-row label {
+    font-size: 14px; color: #aaa; min-width: 70px; flex-shrink: 0;
+  }
+  .input-row input, .input-row select, .input-row textarea {
+    flex: 1; background: #2a2a2a; border: 1px solid #444;
+    border-radius: 6px; padding: 8px 10px;
+    color: #fff; font-size: 14px; font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .input-row input:focus, .input-row select:focus, .input-row textarea:focus {
+    outline: none; border-color: #4caf50;
+  }
+  .input-row textarea { resize: vertical; min-height: 60px; }
+
+  .switch {
+    position: relative; width: 44px; height: 24px;
+    background: #444; border-radius: 12px;
+    cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+  }
+  .switch.on { background: #4caf50; }
+  .switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; background: #fff;
+    border-radius: 50%; transition: transform 0.2s;
+  }
+  .switch.on::after { transform: translateX(20px); }
+
+  .toast {
+    position: absolute; bottom: 80px; left: 50%;
+    transform: translateX(-50%);
+    background: #333; color: #fff;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 14px; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; white-space: nowrap;
+    z-index: 300; max-width: 90%;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { opacity: 1; }
+
+  .back-btn {
+    background: none; border: none; color: #4caf50;
+    font-size: 15px; cursor: pointer;
+    padding: 0 0 12px 0;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .back-btn:hover { text-decoration: underline; }
+
+  .date-control {
+    display: flex; align-items: center; gap: 8px;
+    background: #1e1e1e; border-radius: 10px;
+    padding: 8px 10px; margin-bottom: 16px;
+    justify-content: space-between; border: 1px solid #2a2a2a;
+  }
+  .date-control button {
+    background: #2a2a2a; color: #e0e0e0;
+    padding: 6px 10px; font-size: 13px; border-radius: 6px;
+  }
+  .date-control .current-date {
+    font-size: 14px; color: #4caf50; font-weight: 600;
+    flex: 1; text-align: center;
+  }
+  .date-control .jump-btn {
+    background: none; color: #4caf50;
+    font-size: 12px; padding: 4px 8px;
+  }
+
+  .test-hint {
+    font-size: 11px; color: #ff9800;
+    text-align: center; margin-top: -8px;
+    margin-bottom: 12px; font-style: italic;
+  }
+
+  .add-btn {
+    display: flex; align-items: center;
+    justify-content: center; gap: 6px;
+    width: 100%; padding: 14px;
+    background: transparent; color: #4caf50;
+    border: 1px dashed #4caf50; border-radius: 12px;
+    font-size: 15px; cursor: pointer; margin-top: 4px;
+    transition: background 0.2s;
+  }
+  .add-btn:hover { background: rgba(76,175,80,0.08); }
+
+  .week-grid { display: flex; flex-direction: column; gap: 8px; }
+  .week-day {
+    background: #1e1e1e; border-radius: 10px;
+    padding: 12px 14px; border: 1px solid #2a2a2a;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .week-day:hover { border-color: #4caf50; }
+  .week-day.today { border-color: #4caf50; background: #1a2e1a; }
+  .week-day-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 8px;
+  }
+  .week-day-header .day-name { font-size: 14px; color: #fff; font-weight: 600; }
+  .week-day-header .day-date { font-size: 12px; color: #888; }
+  .week-day.today .day-name { color: #4caf50; }
+  .week-tasks { display: flex; flex-direction: column; gap: 4px; }
+  .week-task {
+    display: flex; justify-content: space-between;
+    align-items: center; font-size: 13px; padding: 3px 0;
+  }
+  .week-task .name { color: #ccc; }
+  .week-task .status { font-size: 12px; }
+  .week-task .status.pending { color: #888; }
+  .week-task .status.completed { color: #4caf50; }
+  .week-task .status.skipped { color: #e53935; }
+  .week-task .status.inProgress { color: #ff9800; }
+  .week-task .status.incomplete { color: #e53935; }
+  .week-empty { font-size: 12px; color: #555; padding: 4px 0; }
+
+  .step-edit-row {
+    background: #252525; border-radius: 8px;
+    padding: 12px; margin-bottom: 8px;
+    border-left: 3px solid #4caf50;
+  }
+  .step-edit-row .row-actions {
+    display: flex; justify-content: flex-end;
+    gap: 6px; margin-top: 8px;
+  }
+
+  .step-detail {
+    background: #252525; border-radius: 8px;
+    padding: 12px; margin-bottom: 8px;
+    border-left: 3px solid #4caf50;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .step-detail .name {
+    font-size: 15px; color: #fff; font-weight: 600; margin-bottom: 4px;
+  }
+  .step-detail .detail { font-size: 13px; color: #999; }
+
+  .section-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin: 16px 0 8px;
+  }
+  .section-header h3 { margin: 0; }
+
+  .weekday-picker {
+    display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;
+  }
+  .weekday-picker button {
+    flex: 1; min-width: 34px; padding: 8px 0;
+    background: #2a2a2a; color: #888;
+    border-radius: 6px; font-size: 13px;
+  }
+  .weekday-picker button.selected {
+    background: #4caf50; color: #fff;
+  }
+
+  .repeat-hint {
+    font-size: 12px; color: #666;
+    margin-top: 6px; line-height: 1.5;
+  }
+
+  .step-checkbox {
+    display: flex; align-items: center;
+    gap: 10px; padding: 10px 12px;
+    background: #252525; border-radius: 8px;
+    margin-bottom: 6px; cursor: pointer;
+    border: 1px solid transparent; transition: border-color 0.15s;
+  }
+  .step-checkbox:hover { border-color: #4caf50; }
+  .step-checkbox.checked { border-color: #4caf50; background: #1e2e1e; }
+  .step-checkbox .box {
+    width: 20px; height: 20px; border-radius: 4px;
+    border: 2px solid #555; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #fff; transition: all 0.15s;
+  }
+  .step-checkbox.checked .box { background: #4caf50; border-color: #4caf50; }
+  .step-checkbox .info { flex: 1; }
+  .step-checkbox .info .name { font-size: 14px; color: #fff; margin-bottom: 2px; }
+  .step-checkbox .info .detail { font-size: 12px; color: #888; }
+
+  .task-group {
+    background: #1e1e1e; border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 12px;
+    border: 1px solid #2a2a2a;
+  }
+  .task-group .head {
+    display: flex; justify-content: space-between;
+    align-items: center; cursor: pointer;
+  }
+  .task-group .head .name { font-size: 16px; font-weight: 600; color: #fff; }
+  .task-group .head .badge {
+    font-size: 12px; color: #ff9800;
+    background: rgba(255,152,0,0.15);
+    padding: 2px 8px; border-radius: 10px;
+  }
+  .task-group .detail {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid #2a2a2a; display: none;
+  }
+  .task-group .detail.open { display: block; }
+  .task-group .detail .day {
+    padding: 8px 0; border-bottom: 1px solid #2a2a2a;
+  }
+  .task-group .detail .day:last-child { border-bottom: none; }
+  .task-group .detail .day .date { font-size: 13px; color: #888; margin-bottom: 4px; }
+  .task-group .detail .day .status { font-size: 14px; color: #ccc; }
+
+  .steps-checked-info {
+    font-size: 12px; color: #666;
+    margin-top: 4px; line-height: 1.5;
+  }
+
+  .divider { height: 1px; background: #2a2a2a; margin: 16px 0; }
+
+  .two-col { display: flex; gap: 8px; }
+  .two-col > * { flex: 1; }
+
+  .day-tabs {
+    display: flex; gap: 4px; margin-bottom: 16px;
+    overflow-x: auto; padding-bottom: 4px;
+  }
+  .day-tabs button {
+    flex: 1; min-width: 44px; padding: 10px 6px;
+    background: #2a2a2a; color: #888;
+    border-radius: 8px; font-size: 13px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+  }
+  .day-tabs button .day-label { font-size: 12px; }
+  .day-tabs button .day-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #4caf50; display: none;
+  }
+  .day-tabs button.has-content .day-dot { display: block; }
+  .day-tabs button.active {
+    background: #4caf50; color: #fff;
+  }
+  .day-tabs button.active .day-dot { background: #fff; }
+
+  .day-assign-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 12px;
+  }
+  .day-assign-header h3 { margin: 0; }
+
+  .day-hint {
+    background: #1e2e1e; border: 1px solid #4caf50;
+    border-radius: 8px; padding: 10px 12px;
+    font-size: 12px; color: #a5d6a7;
+    margin-bottom: 12px; line-height: 1.5;
+  }
+
+  .history-date-header {
+    font-size: 15px; font-weight: 600; color: #fff;
+    margin: 20px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .history-date-header:first-child { margin-top: 0; }
+
+  .backlog-steps {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #2a2a2a;
+  }
+  .backlog-steps .hint {
+    font-size: 12px; color: #888; margin-bottom: 8px;
+  }
+
+  .set-started-hint {
+    text-align: center;
+    font-size: 12px;
+    color: #ff9800;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>任务助手</span>
+    <span>🔋 100%</span>
+  </div>
+
+  <div class="content" id="content">
+
+    <!-- ========== 首页 ========== -->
+    <div class="page active" id="page-home">
+      <div class="date-control">
+        <button onclick="changeDate(-1)">← 前一天</button>
+        <span class="current-date" id="current-date-display">-</span>
+        <button onclick="changeDate(1)">后一天 →</button>
+        <button class="jump-btn" onclick="jumpToToday()">今天</button>
+      </div>
+      <div class="test-hint">⚠ 日期切换仅供原型测试，真实 App 不做</div>
+      <h2>今日安排</h2>
+      <div id="home-tasks"></div>
+      <button class="add-btn" onclick="openAddTaskPage(state.simulatedDate)">＋ 添加任务</button>
+      <div id="home-backlog-entry" style="margin-top:16px;"></div>
+    </div>
+
+    <!-- ========== 计划（任务列表 + 周视图） ========== -->
+    <div class="page" id="page-plans">
+      <h2>任务</h2>
+      <div id="plans-list"></div>
+      <button class="add-btn" onclick="openNewPlanPage()">＋ 新建任务</button>
+
+      <div class="divider"></div>
+
+      <div class="section-header">
+        <h3>本周安排</h3>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-secondary btn-small" onclick="changeWeek(-1)">←</button>
+          <button class="btn-secondary btn-small" onclick="changeWeek(1)">→</button>
+        </div>
+      </div>
+      <div class="card-sub" id="week-range-display" style="text-align:center;margin-bottom:12px;"></div>
+      <div class="week-grid" id="week-grid"></div>
+    </div>
+
+    <!-- ========== 任务详情 ========== -->
+    <div class="page" id="page-plan-detail">
+      <button class="back-btn" onclick="goBack()">← 返回</button>
+      <div id="plan-detail-content"></div>
+    </div>
+
+    <!-- ========== 任务编辑（新建/编辑共用） ========== -->
+    <div class="page" id="page-plan-edit">
+      <button class="back-btn" onclick="cancelPlanEdit()">← 返回</button>
+      <h2 id="plan-edit-title">新建任务</h2>
+      <div id="plan-edit-content"></div>
+    </div>
+
+    <!-- ========== 每周步骤分配 ========== -->
+    <div class="page" id="page-week-assign">
+      <button class="back-btn" onclick="cancelWeekAssign()">← 返回</button>
+      <h2>每周步骤分配</h2>
+      <div class="day-hint">为每个星期几勾选要做哪几个步骤。下方切换星期，设置完直接保存。</div>
+      <div class="day-tabs" id="day-tabs"></div>
+      <div id="day-assign-content"></div>
+    </div>
+
+    <!-- ========== 添加任务 ========== -->
+    <div class="page" id="page-add-task">
+      <button class="back-btn" onclick="cancelAddTask()">← 返回</button>
+      <h2>添加任务</h2>
+      <div id="add-task-content"></div>
+    </div>
+
+    <!-- ========== 训练页 ========== -->
+    <div class="page" id="page-workout">
+      <div id="workout-content"></div>
+    </div>
+
+    <!-- ========== 历史 ========== -->
+    <div class="page" id="page-history">
+      <h2>历史记录</h2>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- ========== 历史详情 ========== -->
+    <div class="page" id="page-detail">
+      <button class="back-btn" onclick="goBack()">← 返回</button>
+      <div id="detail-content"></div>
+    </div>
+
+    <!-- ========== 堆积任务处理 ========== -->
+    <div class="page" id="page-backlog">
+      <button class="back-btn" onclick="goHome()">← 返回首页</button>
+      <h2>堆积任务处理</h2>
+      <div id="backlog-content"></div>
+    </div>
+
+    <!-- ========== 设置 ========== -->
+    <div class="page" id="page-settings">
+      <h2>设置</h2>
+      <div class="card">
+        <div class="setting-row"><span class="setting-label">通知权限</span><span class="setting-value">已授权</span></div>
+        <div class="setting-row"><span class="setting-label">常驻通知</span><span class="setting-value">开启</span></div>
+        <div class="setting-row"><span class="setting-label">震动提醒</span><span class="setting-value">开启</span></div>
+        <div class="setting-row"><span class="setting-label">数据导出</span><span class="setting-value">JSON / CSV</span></div>
+      </div>
+      <div class="card">
+        <h3>关于</h3>
+        <p style="font-size:13px;color:#888;">任务助手 · 原型 v0.10</p>
+        <p style="font-size:12px;color:#4caf50;margin-top:6px;">版本标记：BUILD-2026-10-13-A（每周任务开始日边界修复）</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== 底部导航 ========== -->
+  <div class="bottom-nav">
+    <div class="nav-item active" data-page="home" onclick="switchTab('home')">
+      <span class="icon">🏠</span><span>首页</span>
+    </div>
+    <div class="nav-item" data-page="plans" onclick="switchTab('plans')">
+      <span class="icon">📋</span><span>计划</span>
+    </div>
+    <div class="nav-item" data-page="history" onclick="switchTab('history')">
+      <span class="icon">📊</span><span>历史</span>
+    </div>
+    <div class="nav-item" data-page="settings" onclick="switchTab('settings')">
+      <span class="icon">⚙️</span><span>设置</span>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+<script>
+// ==================== 存储 ====================
+const STORAGE_KEY = 'task_assistant_proto_v10';
+
+// 真实今天：动态取系统日期
+// 【修复三】realToday 改为可变变量：每次点击「今天」都重新读取系统当前日期，
+// 避免页面跨过午夜后还停留在昨天。模拟日期只写到 state.simulatedDate，
+// 不参与这里的计算。
+function getRealToday() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+let realToday = getRealToday();
+
+let state = {
+  tasks: [],
+  schedule: {},
+  history: [],
+  simulatedDate: realToday,
+  weekOffset: 0,
+  // 【修复一】周视图当前显示的最后一天，滚动生成用它算出需要铺到的日期
+  weekViewEnd: realToday
+};
+
+// 是否有「步骤为空的空安排」需要清理。只在真的可能产生空安排时才扫全表，
+// 避免每次翻周都遍历几千个日期。
+let scheduleNeedsPrune = true;
+
+// 写入 localStorage 比较慢，连续翻周时不需要每次都写盘：
+// 500ms 内合并成一次写入；页面隐藏/关闭时立刻补写，保证数据不丢。
+let savePending = false;
+let saveTimer = null;
+function flushSaveState() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (!savePending) return;
+  savePending = false;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+function saveState() {
+  savePending = true;
+  if (saveTimer) return;
+  saveTimer = setTimeout(flushSaveState, 500);
+}
+window.addEventListener('beforeunload', flushSaveState);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushSaveState(); });
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = Object.assign(state, JSON.parse(raw));
+  } catch (e) {}
+}
+
+// ==================== 工具 ====================
+function $(id) { return document.getElementById(id); }
+function uid(p) { return (p||'id') + Date.now() + Math.random().toString(36).slice(2,7); }
+function dateToObj(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+function objToDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function formatDate(s) {
+  const p = s.split('-');
+  const wd = ['日','一','二','三','四','五','六'];
+  const d = new Date(+p[0], +p[1]-1, +p[2]);
+  return `${p[0]}-${p[1]}-${p[2]} 周${wd[d.getDay()]}`;
+}
+function formatShort(s) { const p = s.split('-'); return `${+p[1]}-${+p[2]}`; }
+function showToast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+function getTask(id) { return state.tasks.find(t => t.id === id); }
+function isoDay(dateStr) {
+  const d = dateToObj(dateStr).getDay();
+  return d === 0 ? 7 : d;
+}
+function totalSetsOfEntry(entry, task) {
+  if (!task) return 0;
+  return entry.stepIndexes.reduce((sum, i) => {
+    const s = task.steps[i];
+    return s ? sum + s.sets : sum;
+  }, 0);
+}
+
+// ==================== 滚动生成 ====================
+const ROLL_HORIZON_DAYS = 365;
+
+function addDays(dateStr, n) {
+  const d = dateToObj(dateStr);
+  d.setDate(d.getDate() + n);
+  return objToDate(d);
+}
+
+// 两个 yyyy-MM-dd 取较早的一个（用于按任务结束日收窄生成范围）
+function minDate(a, b) {
+  return a < b ? a : b;
+}
+
+// 【修复二】某个任务在某一天应该做哪几个步骤：每周任务严格按 weeklyPattern 取，
+// 每天任务取全部步骤。计划编辑与滚动生成共用同一套规则，避免两处规则不一致。
+function stepIndexesForDate(task, date) {
+  if (!task || !task.steps) return [];
+  if (task.repeat === 'weekly') {
+    const pat = task.weeklyPattern || {};
+    const arr = pat[isoDay(date)] || pat[String(isoDay(date))] || [];
+    return arr.filter(i => i >= 0 && i < task.steps.length).sort((a, b) => a - b);
+  }
+  return task.steps.map((_, i) => i);
+}
+
+// 生成一个任务在 [fromDate, toDate] 范围内的所有安排
+// 只对 repeat 为 daily / weekly 的任务有效
+function generateEntriesForTask(task, fromDate, toDate) {
+  const entries = [];
+  if (!task || !task.repeat || task.repeat === 'once') return entries;
+  if (!task.startDate) return entries;
+  if (task.startDate > toDate) return entries;
+
+  const startStr = task.startDate > fromDate ? task.startDate : fromDate;
+  const endStr = (task.endDate && task.endDate < toDate) ? task.endDate : toDate;
+  if (endStr < startStr) return entries;
+
+  let d = dateToObj(startStr);
+  const endD = dateToObj(endStr);
+  while (d <= endD) {
+    const ds = objToDate(d);
+    if (task.repeat === 'daily') {
+      entries.push({ date: ds, stepIndexes: task.steps.map((_, i) => i) });
+    } else if (task.repeat === 'weekly') {
+      // 每周任务：某天在 weeklyPattern 里为空就代表那天不做，不生成空安排
+      const idx = stepIndexesForDate(task, ds);
+      if (idx.length > 0) entries.push({ date: ds, stepIndexes: idx });
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return entries;
+}
+
+// 【修复一】以真实今天为锚点的滚动生成。
+// 之前只按 state.simulatedDate 生成「视图日期 + 365 天」，而周视图切换 weekOffset
+// 只改 weekOffset、不改 simulatedDate，于是第 53 周以后（>365 天）的周永远拿不到
+// 循环安排。现在：
+//   1) 前向：从「第一个还没铺到的日期」一直补到 今天 + 365 天 与 当前视图周结束 的较大者；
+//   2) 后向：只在往前翻周视图时回填，最早回到 max(任务开始日, 今天 - 365 天)，
+//      不会再为了看旧周而无限生成全部历史；
+//   3) 两个方向都用「游标 + 缓存」续跑，反复翻周只补新出现的那几天，不重复扫全年；
+//   4) 同一天同一任务已存在就跳过，已存在安排（含完成/跳过/提前结束/进行中）一律不覆盖。
+const ROLL_BACK_DAYS = 365;
+const rollCursors = {};
+
+function resetRollCursors() {
+  Object.keys(rollCursors).forEach(k => delete rollCursors[k]);
+}
+
+function isEmptyEntry(entry) {
+  return !!entry
+    && (entry.stepIndexes || []).length === 0
+    && (entry.sets || []).length === 0
+    && !entry.pointer
+    && entry.status === 'pending';
+}
+
+function taskEntryOn(date, taskId) {
+  const list = state.schedule[date];
+  if (!list) return null;
+  return list.find(x => x.taskId === taskId) || null;
+}
+
+// 这条安排是否已经「被用户动过」：完成 / 跳过 / 提前结束 / 进行中 /
+// 已开始过某一组 / 已记录过任何组数。这类记录一律不覆盖、不清理。
+function isTouchedEntry(entry) {
+  if (!entry) return false;
+  if (entry.status && entry.status !== 'pending') return true;
+  if ((entry.sets || []).length > 0) return true;
+  if (entry.pointer) return true;
+  if (entry.setStarted) return true;
+  return false;
+}
+
+// 【修复一】这条「今天及以后、还没被用户动过」的待做安排是否已经越过任务结束日。
+// 只针对这种情况清理；已完成 / 已跳过 / 提前结束 / 进行中 / 有训练记录的一律返回 false（保留）。
+function isStaleAfterEndDate(task, date, entry, today) {
+  if (!task || !task.endDate) return false;
+  if (!entry) return false;
+  if (isTouchedEntry(entry)) return false;
+  if (date < today) return false;          // 过去的记录一律不动
+  if (date <= task.endDate) return false;
+  return true;
+}
+
+// 在 [fromDate, toDate] 区间里补齐缺失的安排（两个方向共用）。
+// 已存在安排一律跳过，只对「该做但还没有」的日期新建，因此不会覆盖任何记录。
+// force=true 表示调用方已经自行夹好范围，允许补齐「任务开始日之前」的历史周
+// （仅用于已经开始的任务回看自己的旧周）；force=false 时兜底不允许早于开始日。
+function fillMissingInRange(task, fromDate, toDate, force) {
+  if (fromDate > toDate) return false;
+  if (!force && fromDate < task.startDate) fromDate = task.startDate;
+  if (fromDate > toDate) return false;
+  let changed = false;
+  let d = fromDate;
+  while (d <= toDate) {
+    if (!taskEntryOn(d, task.id)) {
+      const idx = stepIndexesForDate(task, d);
+      if (idx.length > 0) {
+        if (!state.schedule[d]) state.schedule[d] = [];
+        state.schedule[d].push(makeEntry(task.id, idx));
+        changed = true;
+      }
+    }
+    d = addDays(d, 1);
+  }
+  return changed;
+}
+
+function ensureTaskCoverage(task, today, viewEnd) {
+  if (!task || !task.startDate) return false;
+  if (!task.repeat || task.repeat === 'once') return false;
+
+  const horizonEnd = addDays(today, ROLL_HORIZON_DAYS);
+  const backwardBound = addDays(today, -ROLL_BACK_DAYS);
+  // 【修复一】前向/后向的生成上限都要受任务结束日约束：
+  // endDate 为空 → 当作没有上限，继续滚动生成；endDate 有值 → 不再越过它生成。
+  const forwardViewEnd = (viewEnd && viewEnd > horizonEnd) ? viewEnd : horizonEnd;
+  const forwardScanEnd = task.endDate ? minDate(forwardViewEnd, task.endDate) : forwardViewEnd;
+  const backwardScanEnd = task.endDate ? minDate(today, task.endDate) : today;
+  const cur = rollCursors[task.id] || (rollCursors[task.id] = { forward: null, backward: null });
+  let changed = false;
+
+  // ---- 前向滚动（与前向无关的后向回填已拆到下面，两段互不依赖）----
+  if (!cur.forward) {
+    // 缓存的游标从第一个「还没有安排」的日期开始；初始化或改动任务后从今天重算，
+    // 最多回头 walk 一年，代价可控
+    let d = today;
+    const floor = addDays(today, -ROLL_BACK_DAYS);
+    for (let i = 0; i <= ROLL_BACK_DAYS; i++) {
+      if (d < floor) break;
+      if (!taskEntryOn(d, task.id)) { cur.forward = d; break; }
+      d = addDays(d, -1);
+    }
+    if (!cur.forward) cur.forward = today;
+  }
+
+  if (cur.forward) {
+    // 【修复一】前向补的起点也要夹在「历史回填下限」之内，
+    // 否则任务开始日很早时，前向一次就会把下限之前的历史全部铺出来。
+    let fillFrom = cur.forward;
+    if (fillFrom < task.startDate) fillFrom = task.startDate;
+    if (fillFrom < backwardBound) fillFrom = backwardBound;
+    if (fillFrom <= forwardScanEnd) {
+      // 【修复三】游标按「处理到哪一天」推进：当天没有分配（每周任务的休息日）只是
+      // 不建空安排，游标照样前进，后续调用不会再重复扫描同一批日期。
+      // 前向只扫这一次新出现的区间，本身不会重复扫描。
+      if (fillMissingInRange(task, fillFrom, forwardScanEnd)) changed = true;
+      cur.forward = addDays(forwardScanEnd, 1);
+    } else if (fillFrom > cur.forward) {
+      // 扫描起点被任务开始日 / 回填下限「抬起」时游标也要跟上，
+      // 否则每次调用都会重复走这段空档（游标最多停在 endDate 之前，不会越过任务结束日）
+      cur.forward = fillFrom;
+    }
+  }
+
+  // ---- 后向回填（只服务于「往前翻」的周视图，与前向游标无关）----
+  // 两段互不依赖前向状态：
+  //   下限 backFloor = 真实今天 - 365 天（不再往更早生成历史）
+  //   A) 连续回填：从「还没回填过的最近日期」一路 walk 到 max(任务开始日, 下限)，
+  //      只补任务开始日之后的日期；游标无论当天有没有生成都会推进，
+  //      走到下限后就整段跳过，不再重复扫描；
+  //   B) 定点回填：当前视图周补齐一次（独立于 A 段游标），范围是
+  //      [max(视图周一, 下限, 未开始任务的开始日), min(视图周日, 任务结束日)]，
+  //      宽度最多 7 天，所以反复翻周不会重复扫描整段历史；
+  //      任务还没到开始日时，视图落在开始日之前的日期本来就不该有安排，不能补出来。
+  if (viewEnd && viewEnd < today) {
+    const backFloor = backwardBound;
+    const backLimit = backFloor > task.startDate ? backFloor : task.startDate;
+    // A) 连续回填：一路走到 backLimit
+    // 注意：只有当游标仍然在 backLimit 之上时才需要继续扫；
+    // 游标已经 <= backLimit（或已经空过一轮）就直接整段跳过，
+    // 不能把 d 抬回 backLimit，否则每次往前翻周都会从 backLimit 重扫整段区间。
+    if (backwardScanEnd >= backLimit && !(cur.backward && cur.backward < backLimit)) {
+      let d = cur.backward || backwardScanEnd;
+      if (d > backwardScanEnd) d = backwardScanEnd;   // 游标晚于可回填区间（如结束日被改早）
+      if (d < backLimit) d = backLimit;
+      while (d >= backLimit) {
+        if (d >= task.startDate && !taskEntryOn(d, task.id)) {
+          const idx = stepIndexesForDate(task, d);
+          if (idx.length > 0) {
+            if (!state.schedule[d]) state.schedule[d] = [];
+            state.schedule[d].push(makeEntry(task.id, idx));
+            changed = true;
+          }
+        }
+        // 无论当天有没有创建安排，游标都要推进
+        cur.backward = addDays(d, -1);
+        d = addDays(d, -1);
+      }
+    }
+    // B) 当前视图周的定点补齐（宽度最多 7 天，不会重复扫描整段历史）
+    // 独立于 A 段游标：A 段已到下限时它仍然要能补齐这一周缺的日期。
+    // 【修复】任务还没到开始日（startDate 晚于今天）时，范围必须夹在 task.startDate 之内，
+    // 否则视图落在开始日之前时会把开始日之前的日期补出来（复现到的缺陷）；
+    // 已经开始的任务保持原行为，允许补齐它自己的历史周（都晚于 365 天下限）。
+    if (viewEnd >= backFloor) {
+      const notStartedYet = task.startDate > today;
+      const vLimit = notStartedYet ? task.startDate : backFloor;
+      let vFrom = addDays(viewEnd, -6);
+      if (vFrom < backFloor) vFrom = backFloor;
+      if (vFrom < vLimit) vFrom = vLimit;
+      const vTo = viewEnd < forwardScanEnd ? viewEnd : forwardScanEnd;
+      if (vFrom <= vTo && fillMissingInRange(task, vFrom, vTo, !notStartedYet)) changed = true;
+    }
+  }
+
+  return changed;
+}
+
+function makeEntry(taskId, stepIndexes) {
+  return {
+    id: uid('entry'),
+    taskId: taskId,
+    stepIndexes: [...stepIndexes].sort((a, b) => a - b),
+    status: 'pending',
+    session: null,
+    sets: [],
+    pointer: 0,
+    setStarted: false
+  };
+}
+
+// viewWeekEnd：当前周视图最后一天（可选）。传了它，远期周也能立刻拿到安排。
+function ensureSchedule(viewWeekEnd) {
+  const today = getRealToday();
+  const viewEnd = viewWeekEnd || state.weekViewEnd || today;
+  let changed = false;
+
+  state.tasks.forEach(task => {
+    if (ensureTaskCoverage(task, today, viewEnd)) changed = true;
+  });
+
+  // 清理两类无用安排，一次扫表同时完成（只有确实可能需要清理时才扫）：
+  //   1) 每周任务留下的空安排（某天被取消勾选时可能出现）；
+  //   2) 【修复一】已经越过任务结束日、且还没被用户动过的待做安排。
+  // 已完成 / 已跳过 / 提前结束 / 进行中 / 有训练记录的一律保留。
+  if (scheduleNeedsPrune) {
+    scheduleNeedsPrune = false;
+    const taskById = {};
+    state.tasks.forEach(t => { taskById[t.id] = t; });
+    if (state.tasks.some(t => t.endDate)) {
+      Object.keys(state.schedule).forEach(date => {
+        const list = state.schedule[date];
+        if (!list) return;
+        const kept = list.filter(x => !isStaleAfterEndDate(taskById[x.taskId], date, x, today));
+        if (kept.length !== list.length) {
+          changed = true;
+          state.schedule[date] = kept;
+        }
+      });
+    }
+    Object.keys(state.schedule).forEach(date => {
+      const list = state.schedule[date];
+      if (!list) return;
+      const kept = list.filter(x => !isEmptyEntry(x));
+      if (kept.length !== list.length) {
+        changed = true;
+        state.schedule[date] = kept;
+      }
+      if (state.schedule[date].length === 0) {
+        delete state.schedule[date];
+        changed = true;
+      }
+    });
+  }
+
+  if (changed) saveState();
+}
+
+// ==================== 状态 ====================
+let currentPage = 'home';
+let currentTab = 'home';
+let currentWorkout = null;
+let currentDetailSession = null;
+let currentPlanDetailId = null;
+let editingPlanId = null;
+let draftPlan = null;
+let backlogStep = {};
+let backlogSelectedSteps = {};
+
+let newPlanForm = {
+  repeat: 'once',
+  onceDate: '',
+  dailyStart: '',
+  dailyEnd: '',
+  weeklyStart: '',
+  weeklyEnd: ''
+};
+
+let weekAssignTaskDraft = null;
+let weekAssignPattern = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
+let weekAssignCurrentDay = 1;
+let weekAssignStartDate = '';
+let weekAssignEndDate = '';
+let weekAssignReturnTo = 'plan-edit';
+
+let restTickHandle = null;
+
+// ==================== 页面切换 ====================
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.bottom-nav .nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === tab);
+  });
+  showPage(tab);
+}
+
+function showPage(id) {
+  currentPage = id;
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  const el = $('page-' + id);
+  if (el) el.classList.add('active');
+  const content = $('content');
+  if (content) content.scrollTop = 0;
+
+  if (id === 'home') renderHome();
+  if (id === 'plans') { renderPlans(); renderWeek(); }
+  if (id === 'plan-detail') renderPlanDetail();
+  if (id === 'plan-edit') renderPlanEdit();
+  if (id === 'week-assign') renderWeekAssign();
+  if (id === 'history') renderHistory();
+  if (id === 'backlog') renderBacklog();
+  if (id === 'workout') renderWorkout();
+  if (id === 'detail') renderDetail();
+  if (id === 'add-task') renderAddTaskForm();
+}
+
+function goHome() { switchTab('home'); }
+function goBack() {
+  if (currentPage === 'detail') showPage('history');
+  else if (currentPage === 'plan-detail') showPage('plans');
+  else showPage('home');
+}
+
+// ==================== 日期 ====================
+function changeDate(delta) {
+  const d = dateToObj(state.simulatedDate);
+  d.setDate(d.getDate() + delta);
+  state.simulatedDate = objToDate(d);
+  state.weekViewEnd = getWeekEndDate(state.weekOffset);
+  saveState();
+  ensureSchedule(state.weekViewEnd);
+  renderHome();
+  showToast(formatDate(state.simulatedDate));
+}
+function jumpToToday() {
+  // 【修复三】每次点击「今天」重新读系统日期，跨午夜后也能回到当天
+  realToday = getRealToday();
+  state.simulatedDate = realToday;
+  state.weekOffset = 0;
+  state.weekViewEnd = getWeekEndDate(0);
+  saveState();
+  ensureSchedule();
+  renderHome();
+}
+function changeWeek(delta) {
+  state.weekOffset += delta;
+  // 【修复一】把当前周视图的最后一天交给滚动生成，远期周也能拿到循环安排
+  state.weekViewEnd = getWeekEndDate(state.weekOffset);
+  saveState();
+  ensureSchedule(state.weekViewEnd);
+  renderWeek();
+}
+
+// 当前周视图的最后一天（周一 ~ 周日）
+function getWeekEndDate(offset) {
+  const days = getWeekDays(offset);
+  return days[6];
+}
+
+// ==================== 首页 ====================
+function getTasksForDate(date) {
+  const list = state.schedule[date] || [];
+  return list.map(t => {
+    const task = getTask(t.taskId);
+    return task ? { ...t, task } : null;
+  }).filter(Boolean);
+}
+
+function renderHome() {
+  $('current-date-display').textContent = formatDate(state.simulatedDate);
+  const container = $('home-tasks');
+  const tasks = getTasksForDate(state.simulatedDate);
+
+  if (tasks.length === 0) {
+    container.innerHTML = '<div class="empty">今天没有安排<br><span style="font-size:12px;color:#555;">点下方按钮添加任务</span></div>';
+  } else {
+    let html = '';
+    tasks.forEach(t => {
+      const task = t.task;
+      const stepsToday = t.stepIndexes.map(i => task.steps[i]).filter(Boolean);
+      const summary = stepsToday.map(s => `${s.name} ${s.sets}组×${s.reps}`).join(' · ');
+      const totalSets = totalSetsOfEntry(t, task);
+      const doneSets = (t.sets || []).length;
+
+      let progressLine = '';
+      if (t.status === 'inProgress' && doneSets > 0) {
+        progressLine = `<div class="card-sub" style="color:#ff9800;margin-top:6px;">进行中 · 已完成 ${doneSets}/${totalSets} 组</div>`;
+      } else if (t.status === 'inProgress') {
+        progressLine = `<div class="card-sub" style="color:#ff9800;margin-top:6px;">进行中 · 尚未开始第一组</div>`;
+      }
+
+      let actions = '';
+      if (t.status === 'pending') {
+        actions = `
+          <button class="btn-primary" onclick="startWorkout('${state.simulatedDate}','${t.id}')">开始</button>
+          <button class="btn-secondary btn-small" onclick="skipTodayTask('${state.simulatedDate}','${t.id}')">跳过</button>
+        `;
+      } else if (t.status === 'inProgress') {
+        actions = `
+          <button class="btn-primary" onclick="resumeWorkout('${t.id}')">继续</button>
+          <button class="btn-warning" onclick="markComplete('${state.simulatedDate}','${t.id}')">完成</button>
+          <button class="btn-secondary btn-small" onclick="skipTodayTask('${state.simulatedDate}','${t.id}')">跳过</button>
+        `;
+      } else if (t.status === 'completed') {
+        actions = `<span style="color:#4caf50;font-size:13px;">✓ 已完成</span>`;
+      } else if (t.status === 'incomplete') {
+        actions = `<span style="color:#e53935;font-size:13px;">⚠ 未完成（提前结束）</span>`;
+      } else if (t.status === 'skipped') {
+        actions = `<span style="color:#888;font-size:13px;">已跳过</span>`;
+      }
+
+      html += `
+        <div class="card">
+          <div class="card-title">
+            <span class="link" onclick="openPlanDetail('${task.id}')">${task.name} ›</span>
+          </div>
+          <div class="card-sub">今日 ${stepsToday.length} 个步骤 · 共 ${totalSets} 组</div>
+          ${progressLine}
+          <div class="steps-checked-info">${summary}</div>
+          <div class="card-actions">${actions}</div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  }
+
+  const backlogEntry = $('home-backlog-entry');
+  const groups = getBacklogGroups();
+  if (groups.length > 0) {
+    const total = groups.reduce((s, g) => s + g.tasks.length, 0);
+    backlogEntry.innerHTML = `
+      <div class="card" style="border-color:#ff9800;">
+        <div class="card-title" style="color:#ff9800;">⚠️ 有 ${total} 个堆积任务</div>
+        <div class="card-sub">点击处理遗留任务</div>
+        <div class="card-actions">
+          <button class="btn-warning" onclick="showPage('backlog')">去处理</button>
+        </div>
+      </div>`;
+  } else {
+    backlogEntry.innerHTML = '';
+  }
+}
+
+function skipTodayTask(date, entryId) {
+  const list = state.schedule[date] || [];
+  const t = list.find(x => x.id === entryId);
+  if (t) t.status = 'skipped';
+  saveState();
+  showToast('已跳过');
+  renderHome();
+}
+
+function markComplete(date, entryId) {
+  const list = state.schedule[date] || [];
+  const t = list.find(x => x.id === entryId);
+  if (!t) return;
+  const task = getTask(t.taskId);
+  if (!task) return;
+  t.status = 'completed';
+
+  const hasHistory = state.history.some(h => h.entryId === entryId);
+  if (!hasHistory) {
+    const recordedSets = t.sets || [];
+    const map = {};
+    recordedSets.forEach(s => {
+      const name = task.steps[s.stepIndex].name;
+      if (!map[name]) {
+        map[name] = { name: name, sets: task.steps[s.stepIndex].sets, targetReps: s.targetReps, actual: [] };
+      }
+      map[name].actual.push(s.status === 'skipped' ? 0 : s.actualReps);
+    });
+    t.stepIndexes.forEach(i => {
+      const s = task.steps[i];
+      if (!map[s.name]) {
+        map[s.name] = { name: s.name, sets: s.sets, targetReps: s.reps, actual: [] };
+      }
+    });
+    state.history.unshift({
+      id: uid('h'),
+      date: date,
+      entryId: entryId,
+      taskName: task.name,
+      steps: Object.values(map),
+      completed: true
+    });
+  }
+  saveState();
+  showToast('已标记完成');
+  renderHome();
+}
+
+// ==================== 计划页 ====================
+function renderPlans() {
+  const c = $('plans-list');
+  if (state.tasks.length === 0) {
+    c.innerHTML = '<div class="empty">还没有任务<br><span style="font-size:12px;color:#555;">点下方按钮新建</span></div>';
+    return;
+  }
+  let html = '';
+  state.tasks.forEach(task => {
+    const totalSets = task.steps.reduce((s, e) => s + e.sets, 0);
+    html += `
+      <div class="card clickable" onclick="openPlanDetail('${task.id}')">
+        <div class="card-title">${task.name}</div>
+        <div class="card-sub">${task.steps.length} 个步骤 · 共 ${totalSets} 组</div>
+        <div class="steps-checked-info">${task.steps.map(s => `${s.name} ${s.sets}×${s.reps}`).join(' · ')}</div>
+      </div>`;
+  });
+  c.innerHTML = html;
+}
+
+function renderWeek() {
+  const days = getWeekDays(state.weekOffset);
+  // 【修复一】渲染前先按当前周范围补齐安排，无论从哪条路径进入周视图都能拿到数据
+  state.weekViewEnd = days[6];
+  ensureSchedule(days[6]);
+  $('week-range-display').textContent = `${formatShort(days[0])} ~ ${formatShort(days[6])}`;
+  const container = $('week-grid');
+  const wd = ['周一','周二','周三','周四','周五','周六','周日'];
+  let html = '';
+  days.forEach((date, i) => {
+    const tasks = getTasksForDate(date);
+    const isToday = date === state.simulatedDate;
+    html += `<div class="week-day ${isToday ? 'today' : ''}" onclick="jumpToDate('${date}')">
+      <div class="week-day-header">
+        <span class="day-name">${wd[i]}${isToday ? ' · 今天' : ''}</span>
+        <span class="day-date">${formatShort(date)}</span>
+      </div>
+      <div class="week-tasks">`;
+    if (tasks.length === 0) {
+      html += `<div class="week-empty">无安排</div>`;
+    } else {
+      tasks.forEach(t => {
+        const statusText = { pending:'待做', completed:'完成', skipped:'跳过', inProgress:'进行中', incomplete:'未完成' }[t.status];
+        html += `<div class="week-task">
+          <span class="name">${t.task.name}</span>
+          <span class="status ${t.status}">${statusText}</span>
+        </div>`;
+      });
+    }
+    html += `</div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function getWeekDays(offset) {
+  const base = dateToObj(state.simulatedDate);
+  base.setDate(base.getDate() + offset * 7);
+  const dow = base.getDay();
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(base);
+  monday.setDate(base.getDate() + mondayOffset);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(objToDate(d));
+  }
+  return days;
+}
+
+function jumpToDate(date) {
+  state.simulatedDate = date;
+  state.weekOffset = 0;
+  state.weekViewEnd = getWeekEndDate(0);
+  saveState();
+  ensureSchedule(state.weekViewEnd);
+  showPage('home');
+}
+
+// ==================== 任务详情 ====================
+function openPlanDetail(taskId) {
+  currentPlanDetailId = taskId;
+  showPage('plan-detail');
+}
+
+function renderPlanDetail() {
+  const c = $('plan-detail-content');
+  const task = getTask(currentPlanDetailId);
+  if (!task) { c.innerHTML = '<div class="empty">任务不存在</div>'; return; }
+  const orderText = task.orderType === 'rotate' ? '轮换式（A1-B1-C1-A2...）' : '传统式（A1-A2-A3-B1...）';
+  const restText = task.restEnabled ? `开启（${task.restSeconds} 秒）` : '关闭';
+
+  let html = `
+    <h2>${task.name}</h2>
+    <div class="card">
+      <div class="setting-row"><span class="setting-label">顺序模式</span><span class="setting-value">${orderText}</span></div>
+      <div class="setting-row"><span class="setting-label">步骤数</span><span class="setting-value">${task.steps.length} 个</span></div>
+      <div class="setting-row"><span class="setting-label">总组数</span><span class="setting-value">${task.steps.reduce((s,e)=>s+e.sets,0)} 组</span></div>
+      <div class="setting-row"><span class="setting-label">组间计时</span><span class="setting-value">${restText}</span></div>
+    </div>
+    <div class="card-actions" style="margin-bottom:12px;">
+      <button class="btn-primary" onclick="openEditPlan('${task.id}')">编辑任务</button>
+      <button class="btn-danger btn-small" onclick="deletePlan('${task.id}')">删除</button>
+    </div>
+    <h3>步骤列表</h3>`;
+
+  task.steps.forEach((s, i) => {
+    html += `<div class="step-detail">
+      <div>
+        <div class="name">${i+1}. ${s.name}</div>
+        <div class="detail">${s.sets} 组 × ${s.reps}</div>
+      </div>
+    </div>`;
+  });
+
+  c.innerHTML = html;
+}
+
+function deletePlan(taskId) {
+  if (!confirm('删除这个任务？已安排到日历上的该任务也会被移除。')) return;
+  state.tasks = state.tasks.filter(t => t.id !== taskId);
+  Object.keys(state.schedule).forEach(date => {
+    state.schedule[date] = state.schedule[date].filter(t => t.taskId !== taskId);
+    if (state.schedule[date].length === 0) delete state.schedule[date];
+  });
+  saveState();
+  showToast('已删除');
+  showPage('plans');
+}
+
+// ==================== 任务新建/编辑 ====================
+function openNewPlanPage() {
+  editingPlanId = null;
+  draftPlan = {
+    id: uid('task'),
+    name: '',
+    orderType: 'rotate',
+    steps: [{ name: '', sets: 3, reps: 10 }],
+    restEnabled: false,
+    restSeconds: 60
+  };
+  newPlanForm = {
+    repeat: 'once',
+    onceDate: state.simulatedDate,
+    dailyStart: state.simulatedDate,
+    dailyEnd: '',
+    weeklyStart: state.simulatedDate,
+    weeklyEnd: ''
+  };
+  $('plan-edit-title').textContent = '新建任务';
+  showPage('plan-edit');
+}
+
+function openEditPlan(taskId) {
+  editingPlanId = taskId;
+  const src = getTask(taskId);
+  if (!src) return;
+  draftPlan = JSON.parse(JSON.stringify(src));
+  $('plan-edit-title').textContent = '编辑任务';
+  showPage('plan-edit');
+}
+
+function cancelPlanEdit() {
+  draftPlan = null;
+  if (editingPlanId) showPage('plan-detail');
+  else showPage('plans');
+}
+
+function renderPlanEdit() {
+  if (!draftPlan) draftPlan = { name:'', orderType:'rotate', steps: [], restEnabled:false, restSeconds:60 };
+  const c = $('plan-edit-content');
+  const isNew = !editingPlanId;
+
+  let html = `
+    <div class="card">
+      <div class="input-row">
+        <label>任务名称</label>
+        <input value="${draftPlan.name}" placeholder="如：健身、英语、读书"
+          oninput="draftPlan.name=this.value" />
+      </div>
+      <div class="input-row">
+        <label>顺序</label>
+        <select onchange="draftPlan.orderType=this.value">
+          <option value="rotate" ${draftPlan.orderType==='rotate'?'selected':''}>轮换式（A1-B1-C1-A2...）</option>
+          <option value="traditional" ${draftPlan.orderType==='traditional'?'selected':''}>传统式（A1-A2-A3-B1...）</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h3>步骤池</h3>
+      <button class="btn-primary btn-small" onclick="addDraftStep()">＋ 添加步骤</button>
+    </div>
+    <div id="draft-steps">`;
+
+  draftPlan.steps.forEach((s, i) => {
+    html += `<div class="step-edit-row">
+      <div class="input-row"><label>名称</label>
+        <input value="${s.name}" placeholder="如：俯卧撑"
+          oninput="draftPlan.steps[${i}].name=this.value" />
+      </div>
+      <div class="input-row"><label>组数</label>
+        <input type="number" min="1" value="${s.sets}"
+          oninput="draftPlan.steps[${i}].sets=+this.value" />
+      </div>
+      <div class="input-row"><label>目标次数</label>
+        <input type="number" min="1" value="${s.reps}"
+          oninput="draftPlan.steps[${i}].reps=+this.value" />
+      </div>
+      <div class="row-actions">
+        <button class="btn-danger btn-small" onclick="removeDraftStep(${i})">删除</button>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>
+
+    <div class="card">
+      <div class="setting-row">
+        <span class="setting-label">组间计时</span>
+        <div class="switch ${draftPlan.restEnabled ? 'on' : ''}" onclick="toggleRest(this)"></div>
+      </div>
+      <div id="rest-seconds-row" style="${draftPlan.restEnabled ? '' : 'display:none;'}">
+        <div class="input-row">
+          <label>休息秒数</label>
+          <input type="number" min="5" value="${draftPlan.restSeconds}"
+            oninput="draftPlan.restSeconds=+this.value" />
+        </div>
+        <div class="repeat-hint">完成一组后自动开始倒计时，但不会阻止你继续操作。</div>
+      </div>
+    </div>`;
+
+  if (isNew) {
+    html += `
+      <div class="card">
+        <h3 style="margin-top:0;">重复安排</h3>
+        <div class="input-row">
+          <label>重复</label>
+          <select onchange="onNewRepeatChange(this.value)">
+            <option value="once" ${newPlanForm.repeat==='once'?'selected':''}>仅一次</option>
+            <option value="daily" ${newPlanForm.repeat==='daily'?'selected':''}>每天</option>
+            <option value="weekly" ${newPlanForm.repeat==='weekly'?'selected':''}>每周（按星期分配）</option>
+          </select>
+        </div>
+        <div id="new-repeat-fields"></div>
+      </div>`;
+  }
+
+  const btnText = (isNew && newPlanForm.repeat === 'weekly') ? '下一步' : '保存';
+  html += `<button id="save-plan-btn" class="btn-primary btn-block" style="margin-top:16px;" onclick="savePlan()">${btnText}</button>`;
+  c.innerHTML = html;
+
+  if (isNew) renderNewRepeatFields();
+}
+
+function renderNewRepeatFields() {
+  const c = $('new-repeat-fields');
+  if (!c) return;
+  let html = '';
+  if (newPlanForm.repeat === 'once') {
+    html = `
+      <div class="input-row">
+        <label>日期</label>
+        <input type="date" value="${newPlanForm.onceDate}"
+          onchange="newPlanForm.onceDate=this.value" />
+      </div>
+      <div class="repeat-hint">只在选定这一天安排一次。</div>`;
+  } else if (newPlanForm.repeat === 'daily') {
+    html = `
+      <div class="input-row">
+        <label>开始</label>
+        <input type="date" value="${newPlanForm.dailyStart}"
+          onchange="newPlanForm.dailyStart=this.value" />
+      </div>
+      <div class="input-row">
+        <label>结束</label>
+        <input type="date" value="${newPlanForm.dailyEnd}"
+          onchange="newPlanForm.dailyEnd=this.value" />
+      </div>
+      <div class="repeat-hint">结束日期留空表示永久每天重复。</div>`;
+  } else if (newPlanForm.repeat === 'weekly') {
+    html = `
+      <div class="input-row">
+        <label>开始</label>
+        <input type="date" value="${newPlanForm.weeklyStart}"
+          onchange="newPlanForm.weeklyStart=this.value" />
+      </div>
+      <div class="input-row">
+        <label>结束</label>
+        <input type="date" value="${newPlanForm.weeklyEnd}"
+          onchange="newPlanForm.weeklyEnd=this.value" />
+      </div>
+      <div class="repeat-hint">点下一步后进入「每周步骤分配」，为周一到周日分别勾选要做哪几个步骤。</div>`;
+  }
+  c.innerHTML = html;
+}
+
+function onNewRepeatChange(val) {
+  newPlanForm.repeat = val;
+  renderNewRepeatFields();
+  const btn = $('save-plan-btn');
+  if (btn) btn.textContent = (val === 'weekly') ? '下一步' : '保存';
+}
+
+function toggleRest(el) {
+  draftPlan.restEnabled = !draftPlan.restEnabled;
+  el.classList.toggle('on', draftPlan.restEnabled);
+  const row = $('rest-seconds-row');
+  if (row) row.style.display = draftPlan.restEnabled ? '' : 'none';
+}
+
+function addDraftStep() {
+  draftPlan.steps.push({ name: '', sets: 3, reps: 10 });
+  renderPlanEdit();
+}
+function removeDraftStep(i) {
+  draftPlan.steps.splice(i, 1);
+  renderPlanEdit();
+}
+
+function validateDraftPlan() {
+  if (!draftPlan.name.trim()) { showToast('请填写任务名称'); return false; }
+  if (draftPlan.steps.length === 0) { showToast('请至少添加一个步骤'); return false; }
+  for (const s of draftPlan.steps) {
+    if (!s.name.trim()) { showToast('步骤名称不能为空'); return false; }
+    if (!s.sets || s.sets < 1) { showToast('组数至少为 1'); return false; }
+    if (!s.reps || s.reps < 1) { showToast('目标次数至少为 1'); return false; }
+  }
+  if (draftPlan.restEnabled && (!draftPlan.restSeconds || draftPlan.restSeconds < 5)) {
+    showToast('休息秒数至少为 5'); return false;
+  }
+  return true;
+}
+
+// 编辑任务后是否要改变某条已有安排的步骤分配。
+// 返回 null 表示保持原样（保守处理）；返回数组表示改成这个分配。
+// 规则：
+//   1) 已完成 / 已跳过 / 提前结束 / 进行中 / 已开始过 / 已记录过组数的安排一律不动；
+//   2) 只处理「今天及以后 + 还没真正开始过」的安排；
+//   3) 每天任务 → 全部步骤；每周任务 → 仍按 weeklyPattern，该天没有分配就保持没有；
+//   4) 只有新增了步骤才需要修正，没新增就原样保留用户已有的手动过滤结果。
+function editedEntryStepIndexes(task, date, oldIndexes, hadNewSteps) {
+  if (!task || !task.steps || task.steps.length === 0) return oldIndexes;
+  const today = getRealToday();
+  if (date < today) return oldIndexes;
+  const total = task.steps.length;
+  if ((oldIndexes || []).some(i => i >= total)) {
+    // 有步骤被删除，先去掉越界索引，避免指向不存在的步骤
+    return oldIndexes.filter(i => i < total).sort((a, b) => a - b);
+  }
+  if (!hadNewSteps) return oldIndexes;
+  return stepIndexesForDate(task, date);
+}
+
+// 【修复二】新增步骤时，把它们并入 weeklyPattern 里「原本就有内容」的星期，
+// 绝不把新步骤加到所有星期（原来那种做法会把新步骤塞进该任务当天所有安排，
+// 每周任务的星期分配因此被破坏）。原本没有分配、或分配为空数组的星期保持不变，
+// 也不会被补出一个空数组。
+function mergeWeeklyPatternNewSteps(task, oldStepCount) {
+  if (!task || task.repeat !== 'weekly' || !task.weeklyPattern) return;
+  const total = task.steps.length;
+  Object.keys(task.weeklyPattern).forEach(key => {
+    const arr = task.weeklyPattern[key];
+    if (!Array.isArray(arr) || arr.length === 0) return;
+    const kept = arr.filter(i => i >= 0 && i < total);
+    for (let i = oldStepCount; i < total; i++) {
+      if (kept.indexOf(i) < 0) kept.push(i);
+    }
+    task.weeklyPattern[key] = kept.sort((a, b) => a - b);
+  });
+}
+
+function savePlan() {
+  if (!validateDraftPlan()) return;
+
+  // 编辑现有任务
+  if (editingPlanId && editingPlanId === draftPlan.id) {
+    const idx = state.tasks.findIndex(t => t.id === editingPlanId);
+    const oldTask = idx >= 0 ? state.tasks[idx] : null;
+    const oldStepCount = oldTask ? oldTask.steps.length : 0;
+    const newStepCount = draftPlan.steps.length;
+    const hadNewSteps = newStepCount > oldStepCount;
+
+    if (idx >= 0) state.tasks[idx] = draftPlan;
+
+    // 【修复二】先按每周分配规则补上新步骤，再同步到日历安排
+    if (hadNewSteps) mergeWeeklyPatternNewSteps(draftPlan, oldStepCount);
+
+    // 同步到已有的日历安排：
+    // 之前是不管重复方式，把新步骤索引塞进该任务所有已有安排，每周任务的
+    // weeklyPattern 分配因此被破坏。现在只改「今天及以后且尚未开始」的安排，
+    // 每周任务仍按 weeklyPattern 重新取，历史记录与原分配全部保留。
+    Object.keys(state.schedule).forEach(date => {
+      state.schedule[date].forEach(entry => {
+        if (entry.taskId !== draftPlan.id) return;
+        if (entry.status !== 'pending') return;      // 完成/跳过/提前结束/进行中不动
+        if ((entry.sets || []).length > 0) return;   // 已记录过训练不动
+        if (entry.pointer) return;
+        if (entry.setStarted) return;
+        const next = editedEntryStepIndexes(draftPlan, date, entry.stepIndexes || [], hadNewSteps);
+        if (next) entry.stepIndexes = next;
+      });
+    });
+    // 删掉步骤后可能出现空安排；把结束日改早后可能出现越过结束日的旧安排，
+    // 都交给 ensureSchedule 的清理逻辑处理
+    scheduleNeedsPrune = true;
+
+    // 任务定义变了（结束日可能也变了），滚动生成的游标要按新定义重算
+    resetRollCursors();
+    ensureSchedule();
+    saveState();
+    const savedId = draftPlan.id;
+    editingPlanId = null;
+    draftPlan = null;
+    showToast('已保存');
+    currentPlanDetailId = savedId;
+    showPage('plan-detail');
+    return;
+  }
+
+  // 新建任务
+  const task = draftPlan;
+  const allIndexes = task.steps.map((_, i) => i);
+
+  if (newPlanForm.repeat === 'weekly') {
+    if (newPlanForm.weeklyStart && newPlanForm.weeklyEnd &&
+        newPlanForm.weeklyEnd < newPlanForm.weeklyStart) {
+      showToast('结束日期不能早于开始日期');
+      return;
+    }
+    task.repeat = 'weekly';
+    task.startDate = newPlanForm.weeklyStart;
+    task.endDate = newPlanForm.weeklyEnd;
+    task.weeklyPattern = null;
+
+    weekAssignTaskDraft = task;
+    weekAssignPattern = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
+    for (let d = 1; d <= 7; d++) weekAssignPattern[d] = task.steps.map((_, i) => i);
+    weekAssignCurrentDay = 1;
+    weekAssignStartDate = newPlanForm.weeklyStart;
+    weekAssignEndDate = newPlanForm.weeklyEnd;
+    weekAssignReturnTo = 'plan-edit';
+    showPage('week-assign');
+    return;
+  }
+
+  if (newPlanForm.repeat === 'once') {
+    if (!newPlanForm.onceDate) { showToast('请选择日期'); return; }
+    task.repeat = 'once';
+    task.startDate = newPlanForm.onceDate;
+    task.endDate = newPlanForm.onceDate;
+
+    state.tasks.push(task);
+    const date = newPlanForm.onceDate;
+    if (!state.schedule[date]) state.schedule[date] = [];
+    state.schedule[date].push(makeEntry(task.id, allIndexes));
+    resetRollCursors();
+    saveState();
+    draftPlan = null;
+    showToast('已保存');
+    state.simulatedDate = date;
+    showPage('plans');
+    return;
+  }
+
+  // 每天重复
+  if (!newPlanForm.dailyStart) { showToast('请选择开始日期'); return; }
+  if (newPlanForm.dailyEnd && newPlanForm.dailyEnd < newPlanForm.dailyStart) {
+    showToast('结束日期不能早于开始日期');
+    return;
+  }
+  task.repeat = 'daily';
+  task.startDate = newPlanForm.dailyStart;
+  task.endDate = newPlanForm.dailyEnd;
+
+  state.tasks.push(task);
+  resetRollCursors();   // 【修复一】任务变了，游标重算，避免沿用旧的"已铺到哪天"
+  saveState();
+
+  // 若新任务开始日在视图之后，跳到那天
+  if (task.startDate && task.startDate > state.simulatedDate) {
+    state.simulatedDate = task.startDate;
+  }
+  ensureSchedule();
+
+  draftPlan = null;
+  showToast('已保存');
+  showPage('plans');
+}
+
+// ==================== 每周步骤分配 ====================
+function renderWeekAssign() {
+  if (!weekAssignTaskDraft) { showPage('plan-edit'); return; }
+  const days = ['一','二','三','四','五','六','日'];
+
+  const tabs = $('day-tabs');
+  let tabsHtml = '';
+  for (let i = 1; i <= 7; i++) {
+    const hasContent = (weekAssignPattern[i] || []).length > 0;
+    tabsHtml += `<button class="${weekAssignCurrentDay === i ? 'active' : ''} ${hasContent ? 'has-content' : ''}"
+      onclick="selectWeekAssignDay(${i})">
+      <span class="day-label">周${days[i-1]}</span>
+      <span class="day-dot"></span>
+    </button>`;
+  }
+  tabs.innerHTML = tabsHtml;
+
+  const c = $('day-assign-content');
+  const task = weekAssignTaskDraft;
+  let html = `
+    <div class="card">
+      <div class="day-assign-header">
+        <h3>周${days[weekAssignCurrentDay-1]}</h3>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-secondary btn-small" onclick="selectAllDaySteps(true)">全选</button>
+          <button class="btn-secondary btn-small" onclick="selectAllDaySteps(false)">全不选</button>
+        </div>
+      </div>
+      <div id="day-steps-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-sub" style="margin-bottom:0;">
+        开始日期：${weekAssignStartDate || '（未设置）'}
+        ${weekAssignEndDate ? '　结束：' + weekAssignEndDate : '　（永久重复）'}
+      </div>
+      <div class="repeat-hint" style="margin-top:6px;">日期在新建任务页已设置，这里只分配每天做什么。</div>
+    </div>
+    <button class="btn-primary btn-block" onclick="saveWeekAssign()">保存并安排</button>
+  `;
+  c.innerHTML = html;
+
+  const list = $('day-steps-list');
+  const selected = weekAssignPattern[weekAssignCurrentDay] || [];
+  let stepsHtml = '';
+  task.steps.forEach((s, i) => {
+    const checked = selected.includes(i);
+    stepsHtml += `<div class="step-checkbox ${checked ? 'checked' : ''}" onclick="toggleWeekAssignStep(${i}, this)">
+      <div class="box">${checked ? '✓' : ''}</div>
+      <div class="info">
+        <div class="name">${s.name || '（未命名）'}</div>
+        <div class="detail">${s.sets} 组 × ${s.reps}</div>
+      </div>
+    </div>`;
+  });
+  if (task.steps.length === 0) stepsHtml = '<div class="empty" style="padding:12px 0;">没有步骤</div>';
+  list.innerHTML = stepsHtml;
+}
+
+function selectWeekAssignDay(day) {
+  weekAssignCurrentDay = day;
+  renderWeekAssign();
+}
+
+function toggleWeekAssignStep(i, el) {
+  const arr = weekAssignPattern[weekAssignCurrentDay];
+  const idx = arr.indexOf(i);
+  if (idx >= 0) arr.splice(idx, 1);
+  else arr.push(i);
+  el.classList.toggle('checked');
+  el.querySelector('.box').textContent = arr.includes(i) ? '✓' : '';
+  const tabs = $('day-tabs').querySelectorAll('button');
+  const tab = tabs[weekAssignCurrentDay - 1];
+  if (tab) tab.classList.toggle('has-content', arr.length > 0);
+}
+
+function selectAllDaySteps(val) {
+  const task = weekAssignTaskDraft;
+  if (!task) return;
+  weekAssignPattern[weekAssignCurrentDay] = val ? task.steps.map((_, i) => i) : [];
+  renderWeekAssign();
+}
+
+function cancelWeekAssign() {
+  if (weekAssignReturnTo === 'plan-detail') {
+    weekAssignTaskDraft = null;
+    showPage('plan-detail');
+  } else {
+    showPage('plan-edit');
+  }
+}
+
+function saveWeekAssign() {
+  if (!weekAssignTaskDraft) return;
+  if (!weekAssignStartDate) { showToast('请选择开始日期'); return; }
+  if (weekAssignEndDate && weekAssignEndDate < weekAssignStartDate) {
+    showToast('结束日期不能早于开始日期');
+    return;
+  }
+  const hasAny = Object.values(weekAssignPattern).some(arr => arr.length > 0);
+  if (!hasAny) { showToast('至少给一天勾选步骤'); return; }
+
+  weekAssignTaskDraft.repeat = 'weekly';
+  weekAssignTaskDraft.startDate = weekAssignStartDate;
+  weekAssignTaskDraft.endDate = weekAssignEndDate;
+  weekAssignTaskDraft.weeklyPattern = JSON.parse(JSON.stringify(weekAssignPattern));
+
+  if (!state.tasks.find(t => t.id === weekAssignTaskDraft.id)) {
+    state.tasks.push(weekAssignTaskDraft);
+  } else {
+    const idx = state.tasks.findIndex(t => t.id === weekAssignTaskDraft.id);
+    state.tasks[idx] = weekAssignTaskDraft;
+  }
+
+  // 与新任务开始日对齐
+  if (weekAssignStartDate && weekAssignStartDate > state.simulatedDate) {
+    state.simulatedDate = weekAssignStartDate;
+  }
+  resetRollCursors();   // 【修复一】任务/分配变了，游标重算
+  scheduleNeedsPrune = true;   // 每周分配或结束日变了，顺带清掉不该再存在的待做安排
+  ensureSchedule();
+  saveState();
+
+  showToast('已保存并安排');
+  weekAssignTaskDraft = null;
+  draftPlan = null;
+  if (weekAssignReturnTo === 'plan-detail') {
+    currentPlanDetailId = state.tasks[state.tasks.length - 1].id;
+    showPage('plan-detail');
+  } else {
+    showPage('plans');
+  }
+}
+
+// ==================== 添加任务 ====================
+let addTaskDate = null;
+let addTaskPresetTaskId = null;
+let addTaskStepChecked = {};
+let addTaskReturnTo = 'home';
+
+function openAddTaskPage(date, presetTaskId) {
+  addTaskDate = date || state.simulatedDate;
+  addTaskReturnTo = currentPage;
+  addTaskPresetTaskId = presetTaskId || null;
+  addTaskStepChecked = {};
+  showPage('add-task');
+}
+
+function cancelAddTask() {
+  if (addTaskReturnTo === 'plan-detail') showPage('plan-detail');
+  else showPage('home');
+}
+
+function renderAddTaskForm() {
+  const c = $('add-task-content');
+  if (!c) return;
+  if (state.tasks.length === 0) {
+    c.innerHTML = '<div class="empty">还没有任务<br>请先到「计划」里新建任务</div>';
+    return;
+  }
+  const opts = state.tasks.map(t =>
+    `<option value="${t.id}" ${addTaskPresetTaskId===t.id?'selected':''}>${t.name}</option>`
+  ).join('');
+
+  c.innerHTML = `
+    <div class="card">
+      <div class="input-row">
+        <label>任务</label>
+        <select id="at-task" onchange="onAddTaskTaskChange()">${opts}</select>
+      </div>
+      <div class="input-row">
+        <label>日期</label>
+        <input type="date" id="at-date" value="${addTaskDate}" />
+      </div>
+      <div class="repeat-hint">只会安排到这一天。如果要周期性安排，请到任务的编辑页重新保存并选择重复方式。</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">选择今天要做的步骤</h3>
+      <div class="card-sub" style="margin-bottom:10px;">从步骤池中勾选今天做哪几个</div>
+      <div id="at-steps-list"></div>
+      <div class="two-col" style="margin-top:10px;">
+        <button class="btn-secondary btn-small" onclick="selectAllAtSteps(true)">全选</button>
+        <button class="btn-secondary btn-small" onclick="selectAllAtSteps(false)">全不选</button>
+      </div>
+    </div>
+    <button class="btn-primary btn-block" onclick="confirmAddTask()">添加</button>
+  `;
+  onAddTaskTaskChange();
+}
+
+function onAddTaskTaskChange() {
+  const taskId = $('at-task').value;
+  const task = getTask(taskId);
+  if (!task) return;
+  addTaskStepChecked = {};
+  task.steps.forEach((_, i) => { addTaskStepChecked[i] = true; });
+  renderAddTaskSteps();
+}
+
+function renderAddTaskSteps() {
+  const taskId = $('at-task').value;
+  const task = getTask(taskId);
+  const c = $('at-steps-list');
+  if (!c) return;
+  if (!task) { c.innerHTML = ''; return; }
+  let html = '';
+  task.steps.forEach((s, i) => {
+    const checked = addTaskStepChecked[i];
+    html += `<div class="step-checkbox ${checked ? 'checked' : ''}" onclick="toggleAtStep(${i}, this)">
+      <div class="box">${checked ? '✓' : ''}</div>
+      <div class="info">
+        <div class="name">${s.name || '（未命名）'}</div>
+        <div class="detail">${s.sets} 组 × ${s.reps}</div>
+      </div>
+    </div>`;
+  });
+  c.innerHTML = html;
+}
+
+function toggleAtStep(i, el) {
+  addTaskStepChecked[i] = !addTaskStepChecked[i];
+  el.classList.toggle('checked', addTaskStepChecked[i]);
+  el.querySelector('.box').textContent = addTaskStepChecked[i] ? '✓' : '';
+}
+
+function selectAllAtSteps(val) {
+  const task = getTask($('at-task').value);
+  if (!task) return;
+  task.steps.forEach((_, i) => { addTaskStepChecked[i] = val; });
+  renderAddTaskSteps();
+}
+
+function confirmAddTask() {
+  const taskId = $('at-task').value;
+  const date = $('at-date').value;
+  if (!date) { showToast('请选择日期'); return; }
+  const stepIndexes = Object.keys(addTaskStepChecked).filter(k => addTaskStepChecked[k]).map(k => +k).sort((a,b)=>a-b);
+  if (stepIndexes.length === 0) { showToast('请至少勾选一个步骤'); return; }
+
+  if (!state.schedule[date]) state.schedule[date] = [];
+  const exists = state.schedule[date].some(t => t.taskId === taskId && t.status !== 'skipped');
+  if (exists) { showToast('这一天已经有该任务'); return; }
+
+  state.schedule[date].push(makeEntry(taskId, stepIndexes));
+  saveState();
+  showToast('已添加');
+  cancelAddTask();
+}
+// ==================== 训练 ====================
+function buildSequence(task, stepIndexes) {
+  const steps = stepIndexes.map(i => task.steps[i]).filter(Boolean);
+  const indexes = stepIndexes.filter(i => i < task.steps.length);
+  const seq = [];
+  if (steps.length === 0) return seq;
+  if (task.orderType === 'rotate') {
+    const maxSets = Math.max(...steps.map(s => s.sets));
+    for (let setIdx = 0; setIdx < maxSets; setIdx++) {
+      for (let k = 0; k < steps.length; k++) {
+        if (setIdx < steps[k].sets) {
+          seq.push({ stepIndex: indexes[k], setIndex: setIdx, targetReps: steps[k].reps });
+        }
+      }
+    }
+  } else {
+    for (let k = 0; k < steps.length; k++) {
+      for (let setIdx = 0; setIdx < steps[k].sets; setIdx++) {
+        seq.push({ stepIndex: indexes[k], setIndex: setIdx, targetReps: steps[k].reps });
+      }
+    }
+  }
+  return seq;
+}
+
+function startWorkout(date, entryId) {
+  const list = state.schedule[date] || [];
+  const entry = list.find(x => x.id === entryId);
+  if (!entry) return;
+  const task = getTask(entry.taskId);
+  if (!task) return;
+  const sequence = buildSequence(task, entry.stepIndexes);
+  if (sequence.length === 0) { showToast('这一天没有勾选任何步骤'); return; }
+
+  const savedSets = entry.sets || [];
+  const savedPointer = entry.pointer || 0;
+  const savedSetStarted = entry.setStarted || false;
+
+  currentWorkout = {
+    date, entryId, task, sequence,
+    pointer: Math.min(savedPointer, sequence.length),
+    sets: [...savedSets],
+    restSecondsLeft: 0,
+    setStarted: savedSetStarted
+  };
+  entry.status = 'inProgress';
+  saveState();
+  showPage('workout');
+}
+
+function resumeWorkout(entryId) {
+  let found = null;
+  Object.keys(state.schedule).forEach(date => {
+    const e = state.schedule[date].find(x => x.id === entryId);
+    if (e) found = { date, entry: e };
+  });
+  if (!found) { showToast('任务不存在'); return; }
+  startWorkout(found.date, entryId);
+}
+
+function persistWorkout() {
+  if (!currentWorkout) return;
+  const list = state.schedule[currentWorkout.date] || [];
+  const entry = list.find(x => x.id === currentWorkout.entryId);
+  if (!entry) return;
+  entry.sets = [...currentWorkout.sets];
+  entry.pointer = currentWorkout.pointer;
+  entry.setStarted = !!currentWorkout.setStarted;
+  saveState();
+}
+
+function renderWorkout() {
+  const c = $('workout-content');
+  if (!currentWorkout) { c.innerHTML = '<div class="empty">没有进行中的训练</div>'; return; }
+  const { task, sequence, pointer, sets } = currentWorkout;
+  if (pointer >= sequence.length) {
+    c.innerHTML = `
+      <h2>完成 🎉</h2>
+      <div class="card"><div class="card-title">${task.name}</div><div class="card-sub">已做完所有组</div></div>
+      <button class="btn-primary btn-block" onclick="finishWorkout()">结束并保存</button>`;
+    return;
+  }
+  const cur = sequence[pointer];
+  const step = task.steps[cur.stepIndex];
+  const setNum = cur.setIndex + 1;
+  const totalSets = step.sets;
+  const target = cur.targetReps;
+  const progress = Math.round(pointer / sequence.length * 100);
+
+  let nextText = '（最后一组）';
+  if (pointer + 1 < sequence.length) {
+    const n = sequence[pointer + 1];
+    nextText = `${task.steps[n.stepIndex].name} 第${n.setIndex + 1}组`;
+  }
+
+  let doneHtml = '';
+  sets.forEach(s => {
+    const st = task.steps[s.stepIndex];
+    const cls = s.status === 'skipped' ? 'gray' : (s.actualReps >= s.targetReps ? 'done' : 'fail');
+    doneHtml += `<div class="set-row"><span>${st.name} 第${s.setIndex+1}组</span>
+      <span class="${cls}">${s.status==='skipped' ? '跳过' : s.actualReps+'/'+s.targetReps}</span></div>`;
+  });
+
+  let restHtml = '';
+  if (task.restEnabled && currentWorkout.restSecondsLeft > 0) {
+    restHtml = `<div class="rest-timer" id="rest-timer">
+      <span class="label">组间休息</span>
+      <span class="time">${currentWorkout.restSecondsLeft}s</span>
+      <button class="btn-secondary btn-small" onclick="skipRest()">跳过</button>
+    </div>`;
+  } else if (task.restEnabled && sets.length > 0 && pointer > 0 && currentWorkout.restSecondsLeft === 0) {
+    restHtml = `<div class="rest-timer done" id="rest-timer">
+      <span class="label">休息结束，开始下一组</span>
+    </div>`;
+  }
+
+  const mainBtnText = currentWorkout.setStarted ? '完成本组' : '开始本组';
+  const startedHint = currentWorkout.setStarted
+    ? '<div class="set-started-hint">本组已开始，点击「完成本组」记录</div>'
+    : '';
+
+  c.innerHTML = `
+    <h2>训练中</h2>
+    <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+    <div class="card-sub" style="text-align:center;margin-bottom:12px;">进度 ${pointer}/${sequence.length} · 下一项：${nextText}</div>
+    <div class="big-current">
+      <div class="action-name">${step.name}</div>
+      <div class="set-info">第 ${setNum}/${totalSets} 组</div>
+      <div class="reps-target">目标 ${target} 次</div>
+      <div class="actual-reps exact" id="actual-reps-display">${target}</div>
+      <div class="rep-controls">
+        <button class="btn-secondary" onclick="adjustReps(-1)">−</button>
+        <button class="btn-secondary" onclick="adjustReps(1)">＋</button>
+      </div>
+    </div>
+    ${startedHint}
+    ${restHtml}
+    <div class="action-buttons">
+      <button class="btn-primary" onclick="handleSetButton()">${mainBtnText}</button>
+      <button class="btn-warning" onclick="skipSet()">跳过本组</button>
+    </div>
+    <div class="action-buttons">
+      <button class="btn-secondary btn-small" onclick="undoLast()">撤销</button>
+      <button class="btn-danger btn-small" onclick="finishWorkout()">结束训练</button>
+    </div>
+    <h3>已完成</h3>
+    <div class="set-list">${doneHtml || '<div class="empty" style="padding:12px 0;">暂无</div>'}</div>`;
+
+  window._actual = target;
+  updateActualDisplay();
+}
+
+function updateActualDisplay() {
+  const el = $('actual-reps-display');
+  if (!el || !currentWorkout) return;
+  const cur = currentWorkout.sequence[currentWorkout.pointer];
+  if (!cur) return;
+  el.textContent = window._actual;
+  el.classList.remove('low', 'ok', 'exact');
+  if (window._actual < cur.targetReps) el.classList.add('low');
+  else if (window._actual > cur.targetReps) el.classList.add('ok');
+  else el.classList.add('exact');
+}
+
+function adjustReps(d) {
+  if (window._actual == null) window._actual = 0;
+  window._actual = Math.max(0, window._actual + d);
+  updateActualDisplay();
+}
+
+// 两阶段按钮：开始本组 → 完成本组
+function handleSetButton() {
+  if (!currentWorkout) return;
+  if (!currentWorkout.setStarted) {
+    currentWorkout.setStarted = true;
+    persistWorkout();
+    renderWorkout();
+    return;
+  }
+  completeSet();
+}
+
+function ensureRestTick() {
+  if (restTickHandle) return;
+  restTickHandle = setInterval(() => {
+    if (!currentWorkout || currentWorkout.restSecondsLeft <= 0) {
+      clearInterval(restTickHandle);
+      restTickHandle = null;
+      return;
+    }
+    currentWorkout.restSecondsLeft--;
+    const el = $('rest-timer');
+    if (el) {
+      if (currentWorkout.restSecondsLeft > 0) {
+        el.querySelector('.time').textContent = currentWorkout.restSecondsLeft + 's';
+      } else {
+        el.classList.add('done');
+        el.innerHTML = '<span class="label">休息结束，开始下一组</span>';
+      }
+    }
+    if (currentWorkout.restSecondsLeft <= 0) {
+      clearInterval(restTickHandle);
+      restTickHandle = null;
+    }
+  }, 1000);
+}
+
+function skipRest() {
+  if (!currentWorkout) return;
+  currentWorkout.restSecondsLeft = 0;
+  if (restTickHandle) { clearInterval(restTickHandle); restTickHandle = null; }
+  renderWorkout();
+}
+
+function completeSet() {
+  if (!currentWorkout) return;
+  const { sequence, pointer, sets, task } = currentWorkout;
+  const cur = sequence[pointer];
+  const actual = window._actual || 0;
+  sets.push({
+    stepIndex: cur.stepIndex, setIndex: cur.setIndex,
+    targetReps: cur.targetReps, actualReps: actual, status: 'done'
+  });
+  currentWorkout.pointer++;
+  currentWorkout.setStarted = false;
+  window._actual = null;
+
+  persistWorkout();
+
+  // 完成最后一组 → 自动结束
+  if (currentWorkout.pointer >= sequence.length) {
+    showToast(`完成：${task.steps[cur.stepIndex].name} ${actual}/${cur.targetReps}`);
+    finishWorkout();
+    return;
+  }
+
+  if (task.restEnabled) {
+    currentWorkout.restSecondsLeft = task.restSeconds;
+    ensureRestTick();
+  } else {
+    currentWorkout.restSecondsLeft = 0;
+  }
+
+  const step = task.steps[cur.stepIndex];
+  showToast(`完成：${step.name} ${actual}/${cur.targetReps}`);
+  renderWorkout();
+}
+
+function skipSet() {
+  if (!currentWorkout) return;
+  const { sequence, pointer, sets, task } = currentWorkout;
+  const cur = sequence[pointer];
+  sets.push({
+    stepIndex: cur.stepIndex, setIndex: cur.setIndex,
+    targetReps: cur.targetReps, actualReps: 0, status: 'skipped'
+  });
+  currentWorkout.pointer++;
+  currentWorkout.setStarted = false;
+  window._actual = null;
+  currentWorkout.restSecondsLeft = 0;
+
+  persistWorkout();
+
+  if (currentWorkout.pointer >= sequence.length) {
+    showToast(`跳过：${task.steps[cur.stepIndex].name}`);
+    finishWorkout();
+    return;
+  }
+
+  const step = task.steps[cur.stepIndex];
+  showToast(`跳过：${step.name} 第${cur.setIndex+1}组`);
+  renderWorkout();
+}
+
+function undoLast() {
+  if (!currentWorkout || currentWorkout.sets.length === 0) { showToast('无可撤销'); return; }
+  currentWorkout.sets.pop();
+  currentWorkout.pointer = Math.max(0, currentWorkout.pointer - 1);
+  currentWorkout.setStarted = false;
+  window._actual = null;
+  currentWorkout.restSecondsLeft = 0;
+  if (restTickHandle) { clearInterval(restTickHandle); restTickHandle = null; }
+  persistWorkout();
+  showToast('已撤销');
+  renderWorkout();
+}
+
+function finishWorkout() {
+  if (!currentWorkout) return;
+  const { date, entryId, task, sets, sequence, pointer } = currentWorkout;
+
+  // 判断是否全部完成：组数全做齐，且没有跳过
+  const allRealDone = (sets.length === sequence.length) && sets.every(s => s.status === 'done');
+  const finalStatus = allRealDone ? 'completed' : 'incomplete';
+
+  const list = state.schedule[date] || [];
+  const entry = list.find(x => x.id === entryId);
+  if (entry) {
+    entry.status = finalStatus;
+    entry.sets = [...sets];
+    entry.pointer = pointer;
+    entry.setStarted = false;
+  }
+
+  // 覆盖同 entryId 的旧历史
+  state.history = state.history.filter(h => h.entryId !== entryId);
+
+  const map = {};
+  sets.forEach(s => {
+    const name = task.steps[s.stepIndex].name;
+    if (!map[name]) {
+      map[name] = {
+        name: name,
+        sets: task.steps[s.stepIndex].sets,
+        targetReps: s.targetReps,
+        actual: []
+      };
+    }
+    map[name].actual.push(s.status === 'skipped' ? 0 : s.actualReps);
+  });
+
+  // 补上未做的步骤（actual 为空，历史页显示“未记录”）
+  if (entry) {
+    entry.stepIndexes.forEach(i => {
+      const s = task.steps[i];
+      if (!map[s.name]) {
+        map[s.name] = { name: s.name, sets: s.sets, targetReps: s.reps, actual: [] };
+      }
+    });
+  }
+
+  state.history.unshift({
+    id: uid('h'),
+    date: date,
+    entryId: entryId,
+    taskName: task.name,
+    steps: Object.values(map),
+    completed: allRealDone
+  });
+
+  if (restTickHandle) { clearInterval(restTickHandle); restTickHandle = null; }
+  currentWorkout = null;
+  saveState();
+  showToast(allRealDone ? '已保存' : '已保存（提前结束）');
+  switchTab('home');
+}
+
+// ==================== 历史 ====================
+function renderHistory() {
+  const c = $('history-list');
+  if (state.history.length === 0) { c.innerHTML = '<div class="empty">暂无历史</div>'; return; }
+
+  const groups = {};
+  state.history.forEach(h => {
+    if (!groups[h.date]) groups[h.date] = [];
+    groups[h.date].push(h);
+  });
+  const dates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+  let html = '';
+  dates.forEach(date => {
+    html += `<div class="history-date-header">${formatDate(date)}</div>`;
+    groups[date].forEach(s => {
+      const statusTag = s.completed === false
+        ? '<span style="color:#e53935;font-size:12px;margin-left:8px;">提前结束</span>'
+        : '';
+      html += `<div class="card clickable" onclick="showDetail('${s.id}')">
+        <div class="card-title">${s.taskName}${statusTag}</div>
+        ${s.steps.map(ex => {
+          const done = ex.actual.filter(r => r > 0).length;
+          const cls = done === ex.sets ? 'gray' : (done < ex.sets ? 'fail' : 'over');
+          const reps = ex.actual.length === 0
+            ? '<span class="gray">未记录</span>'
+            : ex.actual.map(r => {
+                if (r === 0) return `<span class="gray">跳过</span>`;
+                const c2 = r >= ex.targetReps ? (r > ex.targetReps ? 'over' : 'gray') : 'fail';
+                return `<span class="${c2}">${r}/${ex.targetReps}</span>`;
+              }).join(' · ');
+          return `<div class="set-row">
+            <span>${ex.name} <span class="${cls}">${done}/${ex.sets}组</span></span>
+            <span>${reps}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    });
+  });
+  c.innerHTML = html;
+}
+
+function showDetail(id) {
+  currentDetailSession = state.history.find(s => s.id === id);
+  showPage('detail');
+}
+
+function renderDetail() {
+  const c = $('detail-content');
+  const s = currentDetailSession;
+  if (!s) { c.innerHTML = '<div class="empty">无</div>'; return; }
+  const statusTag = s.completed === false
+    ? '<span style="color:#e53935;font-size:12px;margin-left:8px;">提前结束</span>'
+    : '';
+  let html = `<h2>${s.taskName}${statusTag}</h2><div class="card-sub">${formatDate(s.date)}</div>`;
+  s.steps.forEach(ex => {
+    const done = ex.actual.filter(r => r > 0).length;
+    const cls = done === ex.sets ? 'gray' : (done < ex.sets ? 'fail' : 'over');
+    html += `<div class="card"><div class="card-title">${ex.name} <span class="${cls}">${done}/${ex.sets}组</span></div><div class="set-list">`;
+    if (ex.actual.length === 0) {
+      html += `<div class="set-row"><span class="gray">未记录</span></div>`;
+    } else {
+      ex.actual.forEach((r, i) => {
+        const c2 = r === 0 ? 'gray' : (r >= ex.targetReps ? (r > ex.targetReps ? 'over' : 'gray') : 'fail');
+        html += `<div class="set-row"><span>第 ${i+1} 组</span>
+          <span class="${c2}">${r===0?'跳过':r+'/'+ex.targetReps}</span></div>`;
+      });
+    }
+    html += `</div></div>`;
+  });
+  c.innerHTML = html;
+}
+
+// ==================== 堆积任务 ====================
+function getBacklogGroups() {
+  const groups = {};
+  Object.keys(state.schedule).forEach(date => {
+    if (date >= state.simulatedDate) return;
+    state.schedule[date].forEach(t => {
+      if (t.status === 'pending' || t.status === 'inProgress') {
+        if (!groups[t.taskId]) groups[t.taskId] = { taskId: t.taskId, tasks: [] };
+        groups[t.taskId].tasks.push({ date: date, ...t });
+      }
+    });
+  });
+  return Object.values(groups);
+}
+
+function renderBacklog() {
+  const c = $('backlog-content');
+  const groups = getBacklogGroups();
+  if (groups.length === 0) { c.innerHTML = '<div class="empty">没有堆积任务</div>'; return; }
+  let html = '';
+  groups.forEach(g => {
+    const task = getTask(g.taskId);
+    if (!task) return;
+    const step = backlogStep[g.taskId] || 'first';
+    html += `<div class="task-group">
+      <div class="head" onclick="toggleBacklogDetail('${g.taskId}')">
+        <span class="name">${task.name}</span>
+        <span class="badge">${g.tasks.length} 天未处理</span>
+      </div>
+      <div class="detail" id="backlog-detail-${g.taskId}">
+        ${g.tasks.map(t => `
+          <div class="day">
+            <div class="date">${formatDate(t.date)}</div>
+            <div class="status">${t.status === 'inProgress' ? '进行中' : '未开始'}</div>
+          </div>
+        `).join('')}
+      </div>`;
+
+    if (step === 'first') {
+      html += `<div class="card-actions">
+        <button class="btn-primary btn-small" onclick="backlogDo('${g.taskId}')">做</button>
+        <button class="btn-secondary btn-small" onclick="backlogSkip('${g.taskId}')">跳过</button>
+      </div>`;
+    } else {
+      const sel = backlogSelectedSteps[g.taskId] || {};
+      task.steps.forEach((_, i) => { if (sel[i] === undefined) sel[i] = true; });
+      backlogSelectedSteps[g.taskId] = sel;
+
+      html += `<div class="backlog-steps">
+        <div class="hint">选择要保留的步骤（不勾的会被去掉）：</div>
+        <div id="backlog-steps-${g.taskId}">`;
+      task.steps.forEach((s, i) => {
+        const checked = sel[i];
+        html += `<div class="step-checkbox ${checked ? 'checked' : ''}" onclick="toggleBacklogStep('${g.taskId}', ${i}, this)">
+          <div class="box">${checked ? '✓' : ''}</div>
+          <div class="info">
+            <div class="name">${s.name}</div>
+            <div class="detail">${s.sets} 组 × ${s.reps}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div>
+        <div class="card-actions" style="margin-top:10px;">
+          <button class="btn-primary btn-small" onclick="backlogAction('${g.taskId}','顺延')">顺延</button>
+          <button class="btn-warning btn-small" onclick="backlogAction('${g.taskId}','覆盖')">覆盖</button>
+          <button class="btn-secondary btn-small" onclick="backlogAction('${g.taskId}','一起做')">一起做</button>
+          <button class="btn-secondary btn-small" onclick="backlogReset('${g.taskId}')">返回</button>
+        </div>
+      </div>`;
+    }
+
+    html += `</div>`;
+  });
+  c.innerHTML = html;
+}
+
+function toggleBacklogDetail(taskId) {
+  const el = $('backlog-detail-' + taskId);
+  if (el) el.classList.toggle('open');
+}
+
+function toggleBacklogStep(taskId, stepIndex, el) {
+  const sel = backlogSelectedSteps[taskId] || {};
+  sel[stepIndex] = !sel[stepIndex];
+  backlogSelectedSteps[taskId] = sel;
+  el.classList.toggle('checked', sel[stepIndex]);
+  el.querySelector('.box').textContent = sel[stepIndex] ? '✓' : '';
+}
+
+function backlogDo(taskId) { backlogStep[taskId] = 'second'; renderBacklog(); }
+function backlogReset(taskId) { backlogStep[taskId] = 'first'; renderBacklog(); }
+
+function applyBacklogStepFilter(taskId, tasks) {
+  const sel = backlogSelectedSteps[taskId] || {};
+  const kept = Object.keys(sel).filter(k => sel[k]).map(k => +k);
+  tasks.forEach(t => {
+    const list = state.schedule[t.date] || [];
+    const entry = list.find(x => x.id === t.id);
+    if (!entry) return;
+    entry.stepIndexes = entry.stepIndexes.filter(i => kept.includes(i));
+  });
+  scheduleNeedsPrune = true;   // 可能筛成空安排，交给滚动生成顺手清掉
+}
+
+function backlogSkip(taskId) {
+  const g = getBacklogGroups().find(x => x.taskId === taskId);
+  if (g) {
+    g.tasks.forEach(t => {
+      const list = state.schedule[t.date] || [];
+      const entry = list.find(x => x.id === t.id);
+      if (entry) entry.status = 'skipped';
+    });
+  }
+  backlogStep[taskId] = 'first';
+  delete backlogSelectedSteps[taskId];
+  saveState();
+  showToast('已跳过');
+  renderBacklog();
+  renderHome();
+}
+
+function backlogAction(taskId, action) {
+  const g = getBacklogGroups().find(x => x.taskId === taskId);
+  if (!g) return;
+  const task = getTask(taskId);
+  if (!task) return;
+
+  applyBacklogStepFilter(taskId, g.tasks);
+
+  const tasksAfter = g.tasks.map(t => {
+    const list = state.schedule[t.date] || [];
+    const entry = list.find(x => x.id === t.id);
+    return { date: t.date, entry: entry };
+  }).filter(x => x.entry && x.entry.stepIndexes.length > 0);
+
+  if (action === '顺延') {
+    tasksAfter.forEach(({ date, entry }) => {
+      state.schedule[date] = state.schedule[date].filter(x => x.id !== entry.id);
+      if (state.schedule[date].length === 0) delete state.schedule[date];
+      const d = dateToObj(date);
+      d.setDate(d.getDate() + 1);
+      const newDate = objToDate(d);
+      if (!state.schedule[newDate]) state.schedule[newDate] = [];
+      const exists = state.schedule[newDate].some(x => x.taskId === taskId && x.status !== 'skipped');
+      if (!exists) {
+        state.schedule[newDate].push({ ...entry, id: uid('entry') });
+      }
+    });
+    showToast('已顺延');
+  } else if (action === '覆盖') {
+    tasksAfter.forEach(({ date, entry }) => {
+      state.schedule[date] = state.schedule[date].filter(x => x.id !== entry.id);
+      if (state.schedule[date].length === 0) delete state.schedule[date];
+    });
+    const latest = tasksAfter[tasksAfter.length - 1];
+    if (latest) {
+      if (!state.schedule[state.simulatedDate]) state.schedule[state.simulatedDate] = [];
+      state.schedule[state.simulatedDate] = state.schedule[state.simulatedDate].filter(
+        x => !(x.taskId === taskId && x.status === 'pending')
+      );
+      state.schedule[state.simulatedDate].push({
+        id: uid('entry'), taskId: taskId,
+        stepIndexes: latest.entry.stepIndexes,
+        status: 'pending', session: null, sets: [], pointer: 0, setStarted: false
+      });
+    }
+    showToast('已覆盖到今天');
+  } else if (action === '一起做') {
+    const allIndexes = new Set();
+    tasksAfter.forEach(({ date, entry }) => {
+      entry.stepIndexes.forEach(i => allIndexes.add(i));
+      state.schedule[date] = state.schedule[date].filter(x => x.id !== entry.id);
+      if (state.schedule[date].length === 0) delete state.schedule[date];
+    });
+    if (!state.schedule[state.simulatedDate]) state.schedule[state.simulatedDate] = [];
+    state.schedule[state.simulatedDate].push({
+      id: uid('entry'), taskId: taskId,
+      stepIndexes: [...allIndexes].sort((a,b) => a-b),
+      status: 'pending', session: null, sets: [], pointer: 0, setStarted: false
+    });
+    showToast('已合并到今天');
+  }
+
+  backlogStep[taskId] = 'first';
+  delete backlogSelectedSteps[taskId];
+  saveState();
+  renderBacklog();
+  renderHome();
+}
+
+// ==================== 初始化 ====================
+loadState();
+// 【修复三】每次打开页面都重新读系统日期，不用上次存下来的 realToday
+realToday = getRealToday();
+// 兼容旧数据：如果模拟日期没设置，用真实今天
+if (!state.simulatedDate) state.simulatedDate = realToday;
+if (typeof state.weekOffset !== 'number') state.weekOffset = 0;
+state.weekViewEnd = getWeekEndDate(state.weekOffset);
+scheduleNeedsPrune = true;   // 进页面先清一次历史遗留的空安排
+ensureSchedule(state.weekViewEnd);
+renderHome();
+</script>
+</body>
+</html>
